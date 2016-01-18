@@ -101,17 +101,12 @@ class PClusterGenerator:
         
 def find_consonants(location, method, voicing, exclude_list):
     ''' Given a set of parameters, return an array of consonants that match the parameters '''
-    matching_consonants = []
-
-    for c in CONSONANTS:
-        if (location == c.location or location == 'any') and \
-           (method == c.method or method == 'any') and \
-           (voicing == c.voicing or voicing == 'any') and \
-           c.num not in exclude_list: # Sometimes there are exceptions to which consonants can match the input criteria
-
-           matching_consonants.append(c)
-    
-    return matching_consonants
+    return [c for c in CONSONANTS 
+                if  (location == c.location or location == 'any') 
+                and (method == c.method or method == 'any') 
+                and (voicing == c.voicing or voicing == 'any') 
+                and c.num not in exclude_list # Sometimes there are exceptions to which consonants can match the input criteria
+                ] 
         
         
 # List of consonants and their properties
