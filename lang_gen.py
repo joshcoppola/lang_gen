@@ -20,80 +20,64 @@ class Language:
         self.vocabulary = {}
         self.orthography = None
 
+        self.valid_vowels = set()
+        self.valid_consonants = set()
+        
     def generate_language_properties(self):
+        ''' Determine the phonemes which are valid in this language and the 
+            frequency at which they occur '''
+            
         # Start off by randomly discarding some phonemes that will never be used in this language
-        unused_phonemes = []
-
         for c in CONSONANTS:
-            if roll(1, 100) > 90:
-                unused_phonemes.append(c)
+            if roll(1, 100) > 10:
+                self.valid_consonants.add(c)
 
         for v in VOWELS:
-            if roll(1, 100) > 90 or v.type == 'diphthong':
-                unused_phonemes.append(v)
+            if roll(1, 100) > 10 and v.type != 'diphthong':
+                self.valid_vowels.add(v)
 
-        # Now, figure out probabilities for each of the onsets (assigning any containing forbidden phonemes to 0)
+        # Now, figure out probabilities for each of the onsets and codas
+        # If this language contains all consonants in a possible onset or coda, add a random frequency at which the it occurs
         for o in ALL_ONSETS:
-            unused_phoneme = 0
-
-            for onset_consonant in o.consonant_array:
-                if onset_consonant not in unused_phonemes:
-                    self.onset_probabilities[o] = 0
-                    unused_phoneme = 1
-                    break
-
-            if unused_phoneme != 1:
+            if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
                 self.onset_probabilities[o] = roll(5, 45)
-
+        
         for c in ALL_CODAS:
-            unused_phoneme = 0
-            for coda_consonant in c.consonant_array:
-                if coda_consonant in unused_phonemes:
-                    self.coda_probabilities[c] = 0
-                    unused_phoneme = 1
-                    break
-                
-            if unused_phoneme != 1:
+            if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
                 self.coda_probabilities[c] = roll(5, 45)
 
+
         # Set vowel probabilities, can vary on preceding and following cluster
-        for v in VOWELS:
-            # Vowel probabilities are hashes of cluster => probability values,
+        for v in self.valid_vowels:
+            # Vowel probabilities are dicts of cluster: probability values,
             # themselves stored by vowel. The overall hashes below look like
-            # { {vowel ==> {cluster ==> prob}, {cluster ==> prob}, ...}, {vowel2:{ ... } }  }
+            # { {vowel: {cluster: prob}, {cluster: prob}, ...}, {vowel2:{ ... } }  }
             self.vowel_probabilities_by_preceding_cluster[v] = {}
             self.vowel_probabilities_by_following_cluster[v] = {}
-
+            
+            # Choose between low, medium, and high probabilities for this vowel to occur after and before onset and coda clusters
             for (onset, probability) in self.onset_probabilities.iteritems():
-                if v in unused_phonemes:
-                    prob = 0
-                else:
-                    prob = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)])
-                
-                self.vowel_probabilities_by_preceding_cluster[v][onset] = prob
+                self.vowel_probabilities_by_preceding_cluster[v][onset] = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)])
             
-            for (coda, p) in self.coda_probabilities.iteritems():
-                if v in unused_phonemes:
-                    prob = 0
-                else:
-                    prob = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)])
-                
-                self.vowel_probabilities_by_following_cluster[v][coda] = prob 
-            
+            for (coda, probability) in self.coda_probabilities.iteritems():
+                self.vowel_probabilities_by_following_cluster[v][coda] = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)]) 
+
 
     def create_word(self):
+        ''' Generate a word in the language, using the appropriate phoneme frequencies '''
         onset = weighted_random(self.onset_probabilities)
         coda = weighted_random(self.coda_probabilities)
         vowel_probabilities = {}
         
-        for v in VOWELS:
+        # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
+        # TODO - account for empty onsets / codas ... 
+        for v in self.valid_vowels:
             onset_weight = self.vowel_probabilities_by_preceding_cluster[v][onset]
             coda_weight = self.vowel_probabilities_by_following_cluster[v][coda]
 
             vowel_probabilities[v] = onset_weight + coda_weight
 
         vowel = weighted_random(vowel_probabilities)
-        #vowel = ['a', 'e', 'i', 'o', 'u'].sample
         print '{0}{1}{2}'.format(onset.get_string(), vowel.get_string(), coda.get_string())
 
 
