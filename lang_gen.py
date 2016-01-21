@@ -119,13 +119,13 @@ def generate_pclusters():
             ALL_CODAS.append(c)
 
 
+if __name__ == '__main__':
+    generate_pclusters()
 
-generate_pclusters()
+    t = Language()
+    t.generate_language_properties()
 
-t = Language()
-t.generate_language_properties()
-
-for i in xrange(20):
-    t.create_word()
+    for i in xrange(20):
+        t.create_word()
 
 
