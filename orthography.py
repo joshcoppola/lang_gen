@@ -1,6 +1,8 @@
 # coding=Latin-1
 
-from lang_gen import weighted_choice
+from random import randint as roll
+
+from lang_gen import weighted_random
 
 
 ## Vowels: English mapping
@@ -63,7 +65,7 @@ U_U = chr(154) # Ü
 ae = chr(145)  # æ
 AE = chr(146)  # Æ
 
-y_u - chr(152) # ÿ
+y_u = chr(152) # ÿ
 
 # -- Consonants -- #
 
@@ -73,16 +75,19 @@ C_S = chr(128) # Ç
 n_s = chr(164) # ñ
 N_S = chr(165) # Ñ  
 
+# -- Other symbols -- ##
+sigma = chr(235)
+strange_f = chr(159)
 
 ## A way to capitalize those ASCII characters with accents (not handled by regular python .capitalize() method)
-SYMB_TO_CAPITAL = {chr(139):'I', chr(140):'I', chr(141):'I', chr(161):'I',
-                    chr(130):chr(144), chr(136):'E', chr(137):'E', chr(138):chr(144), chr(141):'I', chr(161):'I',
-                    chr(129):chr(154), chr(150):'U', chr(151):'U', chr(163):'U',
-                    chr(145):chr(146),  chr(131):'A', chr(132):chr(142), chr(133):'A', chr(134):chr(143), chr(160):'A',
-                    chr(147):'O', chr(148):chr(153), chr(149):'O', chr(162):'O',
-                    chr(152):'Y',
-                    chr(135):chr(128),
-                    chr(164):chr(165)
+SYMB_TO_CAPITAL = {i_u:'I',  i_c:'I', i_l:'I', i_r:'I',
+                    e_r:E_R, e_c:'E', e_u:'E', e_l:E_R, i_l:'I', i_r:'I',
+                    u_u:U_U, u_c:'U', u_l:'U', u_r:'U',
+                    ae:AE,   a_c:'A', a_u:A_U, a_l:'A', a_o:A_O, a_r:'A',
+                    o_c:'O', o_u:O_U, o_l:'O', o_r:'O',
+                    y_u:'Y',
+                    c_s:C_S,
+                    n_s:N_S
                     }
 
 # In orthography step, each vowel phoneme can be translated to one of these possibilities
@@ -90,17 +95,17 @@ SYMB_TO_CAPITAL = {chr(139):'I', chr(140):'I', chr(141):'I', chr(161):'I',
 
 PHONEMES_WRITTEN = {
 # ----------- VOWELS ----------- #
-    101:{'i':3, chr(139):1, chr(140):1, chr(141):1, chr(161):1},
-    102:{'e':2, 'ea':2, chr(130):1, chr(136):1, chr(137):1, chr(138):1, chr(141):1, chr(161):1},
-    103:{'u':3, chr(129):1, chr(150):1, chr(151):1, chr(163):1},
-    104:{'e':3, chr(130):1, chr(136):1, chr(137):1, chr(138):1},
-    105:{'a':3, chr(145):1,  chr(131):1, chr(132):1, chr(133):1, chr(134):1, chr(160):1},
-    106:{'ae':3, chr(131):1, chr(132):1, chr(133):1, chr(134):1, chr(160):1},
-    107:{'a':2, 'aa':2, chr(131):1, chr(132):1, chr(133):1, chr(134):1, chr(160):1},
-    108:{'ie':1, 'i':1, chr(139):1, chr(140):1, chr(141):1, chr(161):1},
-    109:{'o':1, chr(147):1, chr(148):1, chr(149):1, chr(162):1},
-    110:{'u':1, 'eu':2, 'eo':2, chr(129):1, chr(150):1, chr(151):1, chr(163):1},
-    111:{'ue':2, chr(129):1, chr(150):1, chr(151):1, chr(163):1},
+    101:{'i':3,   i_u:1,   i_c:1,  i_l:1,  i_r:1},
+    102:{'e':2,   'ea':2,  e_r:1,  e_c:1,  e_u:1, e_l:1, i_l:1, i_r:1},
+    103:{'u':3,   u_u:1,   u_c:1,  u_l:1,  u_r:1},
+    104:{'e':3,   e_r:1,   e_c:1,  e_u:1,  e_l:1},
+    105:{'a':3,   ae:1,    a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},
+    106:{'ae':3,  a_c:1,   a_u:1,  a_l:1,  a_o:1, a_r:1},
+    107:{'a':2,   'aa':2,  a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},
+    108:{'ie':1,  'i':1,   i_u:1,  i_c:1,  i_l:1, i_r:1},
+    109:{'o':1,   o_c:1,   o_u:1,  o_l:1,  o_r:1},
+    110:{'u':1,   'eu':2,  'eo':2, u_u:1,  u_c:1, u_l:1, u_r:1},
+    111:{'ue':2,  u_u:1,   u_c:1,  u_l:1,  u_r:1},
     112:{'au':1},
     113:{'ou':1},
     114:{'oi':1},
@@ -117,7 +122,7 @@ PHONEMES_WRITTEN = {
     204:{'d':1},
     205:{'k':4, 'q':1, 'c':2},
     206:{'g':1},
-    207:{'ch':15, 'c':3, chr(135):1},
+    207:{'ch':15, 'c':3, c_s:1},
     208:{'j':1, 'g':1},
     209:{'f':4, 'ph':1},
     210:{'v':1},
@@ -126,7 +131,7 @@ PHONEMES_WRITTEN = {
     213:{'s':1},
     214:{'z':1},
     215:{'sh':1},
-    216:{'zh':1, 'z':2, chr(135):1},
+    216:{'zh':1, 'z':2, c_s:1},
     217:{'h':1},
     218:{'m':1},
     219:{'n':1},
@@ -141,7 +146,12 @@ PHONEMES_WRITTEN = {
 
 class Orthography:
     ''' Class to map phonemes to letters. Very shallow at the moment '''
-    def __init__(self, possible_vowels, possible_consonants, nordic_i=0, use_weird_symbols=0):
+    def __init__(self, parent_orthography=None):
+        # The parent orthography this one is descended from, if any
+        self.parent_orthography = parent_orthography
+        # A list of languages which can be written in this orthography
+        self.languages = []
+        
         # Allow specification of any symbols that are predefined
         self.mapping = {}
 
@@ -151,21 +161,21 @@ class Orthography:
 
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
-        if nordic_i:
-            self.unproc_mapping[101] = {'y':1, chr(152):1}
-            self.unproc_mapping[108] = {'y':1, chr(152):1}
+        if roll(1, 15) == 1:
+            self.unproc_mapping[101] = {'y':1, y_u:1}
+            self.unproc_mapping[108] = {'y':1, y_u:1}
             # Swap the 'y' consonant with a 'j'
             self.unproc_mapping[222] = {'j':1}
 
         # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
         if roll(0, 15) == 1:
-            self.replace_grapheme(phoneme_num=211, old='clear_all', new=chr(235), new_prob=1)
-            self.replace_grapheme(phoneme_num=212, old='clear_all', new=chr(235), new_prob=1)
+            self.replace_grapheme(phoneme_num=211, old='clear_all', new=sigma, new_prob=1)
+            self.replace_grapheme(phoneme_num=212, old='clear_all', new=sigma, new_prob=1)
     
         # Use ƒ instead of sh
         if roll(0, 15) == 1:
-            self.replace_grapheme(phoneme_num=215, old='sh', new=chr(159), new_prob=1)
-            self.replace_grapheme(phoneme_num=216, old='zh', new=chr(159), new_prob=1)
+            self.replace_grapheme(phoneme_num=215, old='sh', new=strange_f, new_prob=1)
+            self.replace_grapheme(phoneme_num=216, old='zh', new=strange_f, new_prob=1)
 
 
         ## TODO ## 
