@@ -83,42 +83,51 @@ strange_f = chr(159)
 
 ## Groups of symbols
 
-RIGHT_ACCENTS = {105:a_r, 106:a_r, 107:a_r, 
-                 102:e_r, 104:e_r,
-                 101:i_r, 102:i_r, 108:i_r,
-                 109:o_r, 
-                 103:u_r, 110:u_r, 111:u_r}
+RIGHT_ACCENTS = {
+    a_r:(105, 106, 107),
+    e_r:(102, 104),
+    i_r:(101, 102, 108),
+    o_r:(109, ), 
+    u_r:(103, 110, 111)
+}
 
-LEFT_ACCENTS =  {105:a_l, 106:a_l, 107:a_l, 
-                 102:e_l, 104:e_l,
-                 101:i_l, 102:i_l, 108:i_l,
-                 109:o_l, 
-                 103:u_l, 110:u_l, 111:u_l}
+LEFT_ACCENTS =  {
+    a_l:(105, 106, 107),
+    e_l:(102, 104),
+    i_l:(101, 102, 108),
+    o_l:(109, ), 
+    u_l:(103, 110, 111)
+}
 
-CARROTS =       {105:a_c, 106:a_c, 107:a_c, 
-                 102:e_c, 104:e_c,
-                 101:i_c, 108:i_c, # 102:i_c
-                 109:o_c, 
-                 103:u_c, 110:u_c, 111:u_c}
+CARROTS = {
+    a_c:(105, 106, 107),
+    e_c:(102, 104),
+    i_c:(101, 108), # 102:i_c
+    o_c:(109, ), 
+    u_c:(103, 110, 111),
+}
 
-UMLAUTS =       {105:a_u, 106:a_u, 107:a_u, 
-                 102:e_u, 104:e_u,
-                 101:i_u, 108:i_u, # 102:i_u
-                 109:o_u, 
-                 103:u_u, 110:u_u, 111:u_u}
+UMLAUTS = {
+    a_u:(105, 106, 107),
+    e_u:(102, 104),
+    i_u:(101, 108), # 102:i_u
+    o_u:(109, ), 
+    u_u:(103, 110, 111),
+}
 
 
 
 ## A way to capitalize those ASCII characters with accents (not handled by regular python .capitalize() method)
-SYMB_TO_CAPITAL = {i_u:'I',  i_c:'I', i_l:'I', i_r:'I',
-                    e_r:E_R, e_c:'E', e_u:'E', e_l:E_R, i_l:'I', i_r:'I',
-                    u_u:U_U, u_c:'U', u_l:'U', u_r:'U',
-                    ae:AE,   a_c:'A', a_u:A_U, a_l:'A', a_o:A_O, a_r:'A',
-                    o_c:'O', o_u:O_U, o_l:'O', o_r:'O',
-                    y_u:'Y',
-                    c_s:C_S,
-                    n_s:N_S
-                    }
+SYMB_TO_CAPITAL = {
+    i_u:'I',  i_c:'I',  i_l:'I',  i_r:'I',
+    e_r:E_R,  e_c:'E',  e_u:'E',  e_l:E_R,
+    u_u:U_U,  u_c:'U',  u_l:'U',  u_r:'U',
+    ae:AE,    a_c:'A',  a_u:A_U,  a_l:'A',  a_o:A_O,  a_r:'A',
+    o_c:'O',  o_u:O_U,  o_l:'O',  o_r:'O',
+    y_u:'Y',
+    c_s:C_S,
+    n_s:N_S
+}
 
 # In orthography step, each vowel phoneme can be translated to one of these possibilities
 # In orthography step, each consonant phoneme can be translated to one of these possibilities
