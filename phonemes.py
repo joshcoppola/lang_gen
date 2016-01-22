@@ -1,3 +1,4 @@
+# coding=Latin-1
 
 import itertools
 
@@ -161,23 +162,22 @@ CONSONANTS = [
 VOWELS = [
 
     # -- Monophthongs -- #
-    Vowel(char='i',  num=101, position=( (0, 7) ),  description='short "i", as in "sit"'),
-    Vowel(char='e',  num=102, position=( (0, 9) ),  description='long "e", as in "see"'),
-    Vowel(char='u',  num=103, position=( (5, 2) ),  description='short "u", as in "up"'),
-    Vowel(char='e',  num=114, position=( (0, 5) ),  description='short "e", as in "beg"'),
-    Vowel(char='a',  num=105, position=( (0, 2) ),  description='short "a", as in "bad"'),
-    Vowel(char='aa', num=107, position=( (9, 1) ),  description='flat "a", as in "ah"'), #hot
-    Vowel(char='oo', num=110, position=( (9, 7) ),  description='short "oo", as in "good"'),
-    Vowel(char='ue', num=111, position=( (9, 9) ),  description='long "u", as in "blue"'),
-    Vowel(char='uh', num=115, position=( (7, 7) ),  description='"u", as in "put"') #!!!!! new
-    Vowel(char='au', num=112, position=( (9, 3) ),  description='"a", as in "saw"'),
+    Vowel(char='i',  num=101, position=( (0, 7), ),  description='short "i", as in "sit"'),
+    Vowel(char='e',  num=102, position=( (0, 9), ),  description='long "e", as in "see"'),
+    Vowel(char='u',  num=103, position=( (5, 2), ),  description='short "u", as in "up"'),
+    Vowel(char='e',  num=114, position=( (0, 5), ),  description='short "e", as in "beg"'),
+    Vowel(char='a',  num=105, position=( (0, 2), ),  description='short "a", as in "bad"'),
+    Vowel(char='aa', num=107, position=( (9, 1), ),  description='flat "a", as in "ah"'), #hot
+    Vowel(char='oo', num=110, position=( (9, 7), ),  description='short "oo", as in "good"'),
+    Vowel(char='ue', num=111, position=( (9, 9), ),  description='long "u", as in "blue"'),
+    Vowel(char='au', num=112, position=( (9, 3), ),  description='"aw", as in "saw"'),
 
     # -- Diphthongs -- #
     Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  description='long "a", as in "gate"'),  ## Really diphthong!
     Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  description='long "i", as in "hide"'), #diphthong?
     Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  description='long "o", as in "toe"'),  # diphthong
-    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  description='diphthong "ou", as in "out"'),
-    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ) , description='diphthong "oi", as in "toil"')
+    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  description='"ou", as in "out"'),
+    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ) , description='"oi", as in "toil"')
 
 ]
 
