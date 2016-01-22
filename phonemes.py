@@ -26,11 +26,16 @@ class Consonant:
         print 'Consonant {0} {1} {2} {3}'.format(self.num, self.location, self.method, self.voicing)
 
 class Vowel:
-    def __init__(self, char, num, type, description):
+    def __init__(self, char, num, position, description):
         self.char = char
         self.num = num
-        self.type = type
+        # Tuple of tuples. Each sub-tuple is an xy pair of tongue position / tongue height
+        # There is one xy pair for each "sound" in the vowel, so monphthongs have one sub-tuple
+        # and diphthongs have two sub-tuples
+        self.position = position
+
         self.description = description
+
 
     def info(self):
         print 'Vowel {0} {1}'.format(self.num, self.char)
@@ -137,21 +142,43 @@ CONSONANTS = [
     Consonant('l',  224, 'alveolar',     'lateral',     3, '"l"') 
     ]
 
+
+
+# Source: https://en.wikipedia.org/wiki/Diphthong#English
+# low    oʊ ~ ʌʊ   8, 5 -> 9, 7
+# loud   aʊ̯~ æʊ   5, 0 -> 5, 6
+# -lout             covered ^
+# lied   äɪ        3, 0 -> 4, 7
+# -light ʌɪ         covered ^
+# lane   eɪ        0, 5 -> 3, 7
+# loin   ɔɪ        9, 4 -> 5, 7
+# -loon  ʉu         covered by 111
+# -lean  i          covered by 102
+# leer   ɪɚ 
+# lair   ɛɚ
+# lure   ʊɚ
+
 VOWELS = [
-    Vowel('i',  101, 'monophthong', 'short "i", as in "sit"'),
-    Vowel('e',  102, 'monophthong', 'long "e", as in "see"'),
-    Vowel('u',  103, 'monophthong', 'short "u", as in "up"'),
-    Vowel('e',  114, 'monophthong', 'short "e", as in "beg"'),
-    Vowel('a',  105, 'monophthong', 'short "a", as in "bad"'),
-    Vowel('ae', 106, 'monophthong', 'long "a", as in "gate"'),
-    Vowel('aa', 107, 'monophthong', 'flat "a", as in "ah"'),
-    Vowel('ie', 108, 'monophthong', 'long "i", as in "hide"'),
-    Vowel('o',  109, 'monophthong', 'long "o", as in "toe"'),
-    Vowel('oo', 110, 'monophthong', 'short "oo", as in "good"'),
-    Vowel('ue', 111, 'monophthong', 'long "u", as in "blue"'),
-    Vowel('au', 112, 'diphthong', 'diphthong "au", as in "auburn"'),
-    Vowel('ou', 113, 'diphthong', 'diphthong "ou", as in "out"'),
-    Vowel('oi', 114, 'diphthong', 'diphthong "oi", as in "toil"')
+
+    # -- Monophthongs -- #
+    Vowel(char='i',  num=101, position=( (0, 7) ),  description='short "i", as in "sit"'),
+    Vowel(char='e',  num=102, position=( (0, 9) ),  description='long "e", as in "see"'),
+    Vowel(char='u',  num=103, position=( (5, 2) ),  description='short "u", as in "up"'),
+    Vowel(char='e',  num=114, position=( (0, 5) ),  description='short "e", as in "beg"'),
+    Vowel(char='a',  num=105, position=( (0, 2) ),  description='short "a", as in "bad"'),
+    Vowel(char='aa', num=107, position=( (9, 1) ),  description='flat "a", as in "ah"'), #hot
+    Vowel(char='oo', num=110, position=( (9, 7) ),  description='short "oo", as in "good"'),
+    Vowel(char='ue', num=111, position=( (9, 9) ),  description='long "u", as in "blue"'),
+    Vowel(char='uh', num=115, position=( (7, 7) ),  description='"u", as in "put"') #!!!!! new
+    Vowel(char='au', num=112, position=( (9, 3) ),  description='"a", as in "saw"'),
+
+    # -- Diphthongs -- #
+    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  description='long "a", as in "gate"'),  ## Really diphthong!
+    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  description='long "i", as in "hide"'), #diphthong?
+    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  description='long "o", as in "toe"'),  # diphthong
+    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  description='diphthong "ou", as in "out"'),
+    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ) , description='diphthong "oi", as in "toil"')
+
 ]
 
 # A syllable onset is the consonant(s) which begin a syllable
