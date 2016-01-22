@@ -79,6 +79,36 @@ N_S = chr(165) # Ñ
 sigma = chr(235)
 strange_f = chr(159)
 
+
+
+## Groups of symbols
+
+RIGHT_ACCENTS = {105:a_r, 106:a_r, 107:a_r, 
+                 102:e_r, 104:e_r,
+                 101:i_r, 102:i_r, 108:i_r,
+                 109:o_r, 
+                 103:u_r, 110:u_r, 111:u_r}
+
+LEFT_ACCENTS =  {105:a_l, 106:a_l, 107:a_l, 
+                 102:e_l, 104:e_l,
+                 101:i_l, 102:i_l, 108:i_l,
+                 109:o_l, 
+                 103:u_l, 110:u_l, 111:u_l}
+
+CARROTS =       {105:a_c, 106:a_c, 107:a_c, 
+                 102:e_c, 104:e_c,
+                 101:i_c, 108:i_c, # 102:i_c
+                 109:o_c, 
+                 103:u_c, 110:u_c, 111:u_c}
+
+UMLAUTS =       {105:a_u, 106:a_u, 107:a_u, 
+                 102:e_u, 104:e_u,
+                 101:i_u, 108:i_u, # 102:i_u
+                 109:o_u, 
+                 103:u_u, 110:u_u, 111:u_u}
+
+
+
 ## A way to capitalize those ASCII characters with accents (not handled by regular python .capitalize() method)
 SYMB_TO_CAPITAL = {i_u:'I',  i_c:'I', i_l:'I', i_r:'I',
                     e_r:E_R, e_c:'E', e_u:'E', e_l:E_R, i_l:'I', i_r:'I',
@@ -94,27 +124,28 @@ SYMB_TO_CAPITAL = {i_u:'I',  i_c:'I', i_l:'I', i_r:'I',
 # In orthography step, each consonant phoneme can be translated to one of these possibilities
 
 PHONEMES_WRITTEN = {
-# ----------- VOWELS ----------- #
-    101:{'i':3,   i_u:1,   i_c:1,  i_l:1,  i_r:1},
-    102:{'e':2,   'ea':2,  e_r:1,  e_c:1,  e_u:1, e_l:1, i_l:1, i_r:1},
-    103:{'u':3,   u_u:1,   u_c:1,  u_l:1,  u_r:1},
-    104:{'e':3,   e_r:1,   e_c:1,  e_u:1,  e_l:1},
-    105:{'a':3,   ae:1,    a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},
-    106:{'ae':3,  a_c:1,   a_u:1,  a_l:1,  a_o:1, a_r:1},
-    107:{'a':2,   'aa':2,  a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},
-    108:{'ie':1,  'i':1,   i_u:1,  i_c:1,  i_l:1, i_r:1},
-    109:{'o':1,   o_c:1,   o_u:1,  o_l:1,  o_r:1},
-    110:{'u':1,   'eu':2,  'eo':2, u_u:1,  u_c:1, u_l:1, u_r:1},
-    111:{'ue':2,  u_u:1,   u_c:1,  u_l:1,  u_r:1},
-    112:{'au':1},
-    113:{'ou':1},
-    114:{'oi':1},
 
-# ----------- Consonants ----------- #
-# (300 and 301 are special - used at syllable onsets which don't start with a consonant and
-# syllable codas which don't end with a consonant, respectively
-    300:{'':1},
-    301:{'':1},
+    # ----------- VOWELS ----------- #
+
+    101:{'i':3,   i_u:1,   i_c:1,  i_l:1,  i_r:1},                      # sit
+    102:{'e':2,   'ea':2,  e_r:1,  e_c:1,  e_u:1, e_l:1, i_l:1, i_r:1}, # see
+    103:{'u':3,   u_u:1,   u_c:1,  u_l:1,  u_r:1},                      # up
+    104:{'e':3,   e_r:1,   e_c:1,  e_u:1,  e_l:1},                      # beg
+    105:{'a':3,   ae:1,    a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},        # bad
+    106:{'ae':3,  a_c:1,   a_u:1,  a_l:1,  a_o:1, a_r:1},               # sundae
+    107:{'a':2,   'aa':2,  a_c:1,  a_u:1,  a_l:1, a_o:1, a_r:1},        # Saab
+    108:{'ie':1,  'i':1,   i_u:1,  i_c:1,  i_l:1, i_r:1},               # pie
+    109:{'o':1,   o_c:1,   o_u:1,  o_l:1,  o_r:1},                      # toe
+    110:{'u':1,   'eu':2,  'eo':2, u_u:1,  u_c:1, u_l:1, u_r:1},        # good
+    111:{'ue':2,  u_u:1,   u_c:1,  u_l:1,  u_r:1},                      # blue
+    112:{'au':1},                                                       # auger
+    113:{'ou':1},                                                       # out
+    114:{'oi':1},                                                       # toil
+
+    # ----------- Consonants ----------- #
+
+    300:{'':1}, # (300 and 301 are special - used at syllable onsets which don't start with
+    301:{'':1}, # a consonant and syllable codas which don't end with a consonant, respectively
 
     201:{'p':1},
     202:{'b':1},
