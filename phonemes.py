@@ -1,6 +1,7 @@
 # coding=Latin-1
 
 import itertools
+from collections import Counter
 
 ''' 
 This file deals with language building blocks (phonemes) and clusters of phonemes.
@@ -60,47 +61,29 @@ class PCluster:
 
 
 class PClusterGenerator:
-    ''' This class contains rules to generate clusters of phonemes
-    A cluster can be a syllable onset or coda. Many clusters are a 
-    single consonant, but there are some complex ones like "spr" 
-    The clusters are defined by rules, and this class will convert 
-    those rules into every possible permutation of clusters which 
-    match the rules '''
+    ''' This class contains rules to generate clusters of phonemes. A cluster
+    can be a syllable onset or coda. Many clusters are a single consonant, but
+    there are some complex ones like "spr". The clusters are defined by rules,
+    and this class will convert those rules into every possible permutation of
+    clusters which match the rules '''
     def __init__(self, property_list):
         self.property_list = property_list
 
     def generate(self):
-        converted_to_consonants_mega_list = [] # array of arrays tracking all matching consonants
-        for property in self.property_list:
-            matching_consonants = find_consonants(property[0], property[1], property[2], property[3])
-            converted_to_consonants_mega_list.append(matching_consonants)
-        # Code found here: http://stackoverflow.com/questions/5582481/creating-permutations-from-a-multi-dimensional-array-in-ruby
-        # In short, checks all permutations of a 2-dimensional array, in order
-        # Here, this is checking all possible onsets / codas, given the rules definied in the input
-        
-        all_permutations = []
+        ''' Generates specific Phoneme Cluster objects (PCluster) from a set of
+            rules defined in self.property_list '''
+        # array of arrays tracking all matching consonants
+        converted_to_consonants_mega_list = [find_consonants(property[0], property[1], property[2], property[3]) for property in self.property_list]
 
-        for l in converted_to_consonants_mega_list:
-            for item in itertools.product(l):
-                all_permutations.append(item)
-                
-        # This will be a list of the posssible permutations, in consonant form
-        all_permutations_worked = []
+        # Take the 2D array defined in the input, and create all permutations that the rules generalize to.
+        # For example, this will transform [[A, B], [C, D], [E]] into [[A, C, E], [A, D, E], [B, C, E], [B, D, E]]
+        # In this case, A, B, C, ... are particular phonemes which match the criteria in self.property_list
+        all_permutations = itertools.product(*converted_to_consonants_mega_list)
 
-        # Check to make sure that there are no back-to-back copies of the same consonant
-        # (due to the ways the rules are defined, this can occasionally happen)
-        # If there are no duplicates, then create a new PCluster object and add it to the possibilities
-        for i in all_permutations:
-            has_duplicate_consonant = 0
-            consonant_array = []
-            for consonant in i:
-                if len(consonant_array) > 0 and consonant.num == consonant_array[-1].num:
-                    has_duplicate_consonant = 1
-
-                consonant_array.append(consonant)
-            # Only let the clusters without duplicate consonants through
-            if has_duplicate_consonant == 0:
-                all_permutations_worked.append(PCluster(consonant_array))
+        # Filter out any cluster which contains repeated phonemes (Certain generalized rules can cause this to occur)
+        # and create the actual phoneme cluster object from this.
+        all_permutations_worked = [PCluster(permutation) for permutation in all_permutations
+                                     if all((phoneme_occurence == 1 for phoneme_occurence in Counter(permutation).values())) ]
 
         return all_permutations_worked        
         
