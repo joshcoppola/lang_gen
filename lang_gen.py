@@ -22,7 +22,10 @@ class Language:
 
         self.valid_vowels = set()
         self.valid_consonants = set()
-        
+
+        self.first_onset_no_consonant_chance = roll(20, 80)
+        self.final_coda_no_consonant_chance = roll(20, 80)
+
     def generate_language_properties(self):
         ''' Determine the phonemes which are valid in this language and the 
             frequency at which they occur '''
@@ -80,7 +83,16 @@ class Language:
             vowel_probabilities[v] = onset_weight + coda_weight
 
         vowel = weighted_random(vowel_probabilities)
-        print '{0}{1}{2}'.format(onset.get_string(), vowel.get_string(), coda.get_string())
+
+        # ---------- Some temporary ways to drop an onset ---------- #
+        if roll(1, 100) <= self.first_onset_no_consonant_chance:    onset = ''
+        else:                                                       onset = onset.get_string()
+
+        if roll(1, 100) <= self.final_coda_no_consonant_chance and onset != '':     coda = ''
+        else:                                                                       coda = coda.get_string()
+        # ---------------------------------------------------------- #
+
+        print '{0}{1}{2}'.format(onset, vowel.get_string(), coda)
 
     # def info_dump(self):
     #     onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)
