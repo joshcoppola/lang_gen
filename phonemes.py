@@ -173,7 +173,7 @@ CONSONANTS = [
     Consonant('s',  213, 'alveolar',     'fricative',   0, '"s"'),
     Consonant('z',  214, 'alveolar',     'fricative',   1, '"z"'),
     Consonant('sh', 215, 'post-alveolar','fricative',   0, '"sh", as in "shore"'),
-    Consonant('zh', 216, 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
+    # Consonant('zh', 216, 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
     Consonant('h',  217, 'glottal',      'fricative',   3, '"h"'),
     Consonant('m',  218, 'bilabial',     'nasal',       3, '"m"'),
     Consonant('n',  219, 'alveolar',     'nasal',       3, '"n"'),
@@ -288,7 +288,7 @@ POSSIBLE_ONSETS = [
 
 
 # A syllable coda is the consonant(s) which end a syllable
-POSSIBLE_CODAS =  [ 
+POSSIBLE_CODAS =  [
     PClusterGenerator( Rule('bilabial', 'plosive', 0, []) ),
     PClusterGenerator( Rule('bilabial', 'plosive', 1, []) ),
     PClusterGenerator( Rule('alveolar', 'plosive', 0, []) ),
