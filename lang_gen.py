@@ -2,7 +2,7 @@
 from random import randint as roll
 import random
 
-from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS
+from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS
 
 ''' 
 This file generates languages (and eventually orthographies) which have distinct
@@ -32,7 +32,7 @@ class Language:
             
         # Start off by randomly discarding some phonemes that will never be used in this language
         for c in CONSONANTS:
-            if roll(1, 100) > 10:
+            if roll(1, 100) > 10 and c.num < 300:
                 self.valid_consonants.add(c)
 
         for v in VOWELS:
@@ -44,13 +44,20 @@ class Language:
         for o in ALL_ONSETS:
             if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
                 # Reduce the probability of complex onsets
-                self.onset_probabilities[o] = int(roll(5, 45)/len(o.consonant_array))
+                if len(o.consonant_array) == 1:     self.onset_probabilities[o] = roll(75, 200)
+                elif len(o.consonant_array) > 1:    self.onset_probabilities[o] = roll(1, 5)
 
         for c in ALL_CODAS:
             if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
                 # Reduce the probability of complex codas
-                self.coda_probabilities[c] = int(roll(5, 45)/len(c.consonant_array))
+                if len(c.consonant_array) == 1:     self.coda_probabilities[c] = roll(75, 200)
+                elif len(c.consonant_array) > 1:    self.coda_probabilities[c] = roll(1, 5)
 
+        # The placeholder "clusters" for empty onsets/codas
+        self.onset_probabilities[EMPTY_CONSONANTS[0]] = int(roll(500, 1000))
+        #self.onset_probabilities[EMPTY_CONSONANTS[2]] = int(roll(100, 200))
+        self.coda_probabilities[EMPTY_CONSONANTS[1]] = int(roll(450, 900))
+        #self.coda_probabilities[EMPTY_CONSONANTS[3]] = int(roll(100, 200))
 
         # Set vowel probabilities, can vary on preceding and following cluster
         for v in self.valid_vowels:
@@ -60,45 +67,59 @@ class Language:
             self.vowel_probabilities_by_preceding_cluster[v] = {}
             self.vowel_probabilities_by_following_cluster[v] = {}
             
+            diphthong = len(v.position) > 1
+
             # Choose between low, medium, and high probabilities for this vowel to occur after and before onset and coda clusters
             for (onset, probability) in self.onset_probabilities.iteritems():
-                self.vowel_probabilities_by_preceding_cluster[v][onset] = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)])
+                probability = roll(75, 150) if not diphthong else roll(1, 10)
+                self.vowel_probabilities_by_preceding_cluster[v][onset] = probability
             
             for (coda, probability) in self.coda_probabilities.iteritems():
-                self.vowel_probabilities_by_following_cluster[v][coda] = random.choice([roll(0, 5), roll(20, 30), roll(50, 75)]) 
+                probability = roll(75, 150) if not diphthong else roll(1, 10)
+                self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
 
-    def create_word(self):
+    def create_word(self, syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
-        onset = weighted_random(self.onset_probabilities)
-        coda = weighted_random(self.coda_probabilities)
-        vowel_probabilities = {}
         
-        # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
-        # TODO - account for empty onsets / codas ... 
-        for v in self.valid_vowels:
-            onset_weight = self.vowel_probabilities_by_preceding_cluster[v][onset]
-            coda_weight = self.vowel_probabilities_by_following_cluster[v][coda]
+        word = ''
 
-            vowel_probabilities[v] = onset_weight + coda_weight
+        previous_coda_complex = 0
+        
+        for i in xrange(syllables):
+            
+            ## -------- Handle onset (none if previous coda was complex) ------- ##
+            if not previous_coda_complex: onset = weighted_random(self.onset_probabilities)
+            else:                         onset = EMPTY_CONSONANTS[0]
+            ## ----------------------------------------------------------------- ##
 
-        vowel = weighted_random(vowel_probabilities)
+            coda = weighted_random(self.coda_probabilities)
+            # Update the flag for whether the previous coda was complex or not
+            previous_coda_complex = 1 if len(coda.consonant_array) > 1 else 0
 
-        # ---------- Some temporary ways to drop an onset ---------- #
-        if roll(1, 100) <= self.first_onset_no_consonant_chance:    onset = ''
-        else:                                                       onset = onset.get_string()
+            # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
+            vowel_probabilities = {v: self.vowel_probabilities_by_preceding_cluster[v][onset] + 
+                                      self.vowel_probabilities_by_following_cluster[v][coda] for v in self.valid_vowels}
 
-        if roll(1, 100) <= self.final_coda_no_consonant_chance and onset != '':     coda = ''
-        else:                                                                       coda = coda.get_string()
-        # ---------------------------------------------------------- #
+            vowel = weighted_random(vowel_probabilities)
 
-        print '{0}{1}{2}'.format(onset, vowel.get_string(), coda)
 
-    # def info_dump(self):
-    #     onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)
-    #
-    #     for perc, c in onset_probabilities:
-    #         print perc, c.get_string()
+            word += '{0}{1}{2}'.format(onset.get_string(), vowel.get_string(), coda.get_string())
+
+
+        
+        print word
+
+    def info_dump(self):
+        print '\n Onsets \n -', sum(self.onset_probabilities.values())
+        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)    
+        for perc, c in onset_probabilities:
+            print perc, c.get_string()
+
+        print '\n Codas \n -', sum(self.coda_probabilities.values())
+        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) for cons in self.coda_probabilities.keys()), reverse=True)    
+        for perc, c in coda_probabilities:
+            print perc, c.get_string()
 
 def weighted_random(choices):
     ''' Naive algorithm. Input a hash of possibility+>weight, 
@@ -144,9 +165,9 @@ if __name__ == '__main__':
     t = Language()
     t.generate_language_properties()
 
-    # t.info_dump()
-    #
+    t.info_dump()
+    
     for i in xrange(20):
-        t.create_word()
+        t.create_word(syllables=roll(1, 2))
 
 
