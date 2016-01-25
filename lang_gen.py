@@ -33,18 +33,20 @@ class Language:
                 self.valid_consonants.add(c)
 
         for v in VOWELS:
-            if roll(1, 100) > 10 and v.type != 'diphthong':
+            if roll(1, 100) > 10: #and v.type != 'diphthong':
                 self.valid_vowels.add(v)
 
         # Now, figure out probabilities for each of the onsets and codas
         # If this language contains all consonants in a possible onset or coda, add a random frequency at which the it occurs
         for o in ALL_ONSETS:
             if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
-                self.onset_probabilities[o] = roll(5, 45)
-        
+                # Reduce the probability of complex onsets
+                self.onset_probabilities[o] = int(roll(5, 45)/len(o.consonant_array))
+
         for c in ALL_CODAS:
             if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
-                self.coda_probabilities[c] = roll(5, 45)
+                # Reduce the probability of complex codas
+                self.coda_probabilities[c] = int(roll(5, 45)/len(c.consonant_array))
 
 
         # Set vowel probabilities, can vary on preceding and following cluster
@@ -80,7 +82,11 @@ class Language:
         vowel = weighted_random(vowel_probabilities)
         print '{0}{1}{2}'.format(onset.get_string(), vowel.get_string(), coda.get_string())
 
-
+    # def info_dump(self):
+    #     onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)
+    #
+    #     for perc, c in onset_probabilities:
+    #         print perc, c.get_string()
 
 def weighted_random(choices):
     ''' Naive algorithm. Input a hash of possibility+>weight, 
@@ -111,13 +117,14 @@ def generate_pclusters():
         onsets = i.generate()
         for o in onsets:
             ALL_ONSETS.append(o)
+            # print o.get_string(), o.rule_set
 
     ALL_CODAS = []
     for i in POSSIBLE_CODAS: 
         codas = i.generate()
         for c in codas:
             ALL_CODAS.append(c)
-
+            # print c.get_string(), c.rule_set
 
 if __name__ == '__main__':
     generate_pclusters()
@@ -125,6 +132,8 @@ if __name__ == '__main__':
     t = Language()
     t.generate_language_properties()
 
+    # t.info_dump()
+    #
     for i in xrange(20):
         t.create_word()
 
