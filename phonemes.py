@@ -10,7 +10,7 @@ occurs at the start of a syllable (onset) or at the end of a syllable (coda).
 '''
 
 # For lack of a better location, this maps the
-VOICING_DESCRIPTIONS = {0: 'unvoiced', 1:'voiced', 3:'', 'any':'voiced or unvoiced'}
+VOICING_DESCRIPTIONS = {0: ' unvoiced', 1:' voiced', 3:'', 'any':''}
 
 class Consonant:
     ''' A consonant is the basic building block of phoneme clusters
@@ -74,7 +74,6 @@ class PClusterGenerator:
 
         rule_descriptions = [rule.describe_rule() for rule in self.phoneme_properties]
         self.rule_set = ' followed by '.join(rule_descriptions)
-        print self.rule_set
 
     def generate(self):
         ''' Generates specific Phoneme Cluster objects (PCluster) from a set of
@@ -134,11 +133,11 @@ class Rule:
 
         ## If the location can be anything, and method is described, build a string like 'any voiced plosive'
         elif self.location == 'any' and self.method != 'any':
-            description = '{0} {1} {2}{3}'.format(self.location, voicing_description, self.method, exceptions)
+            description = '{0}{1} {2}{3}'.format(self.location, voicing_description, self.method, exceptions)
 
         ## If the location is described, and method can be anything, build a string like 'any voiced bilabial'
         elif self.location != 'any' and self.method == 'any':
-            description = '{0} {1} {2}{3}'.format(self.method, voicing_description, self.location, exceptions)
+            description = '{0}{1} {2}{3}'.format(self.method, voicing_description, self.location, exceptions)
 
         ## Should never have a rule like this - to print an error. TODO - log this
         elif self.location == 'any' and self.method == 'any':
@@ -247,15 +246,26 @@ POSSIBLE_ONSETS = [
     #PClusterGenerator( [['velar', 'nasal', 3, []] ] ),
     PClusterGenerator( Rule('alveolar', 'approximant', 3, []) ),
     PClusterGenerator( Rule('palatal', 'approximant', 3, []) ),
-    #PClusterGenerator( [['velar', 'approximant', 3, []] ] ),
+    PClusterGenerator( Rule('velar', 'approximant', 3, []) ), # w  -- originally had been commented out
     PClusterGenerator( Rule('alveolar', 'lateral', 3, []) ),
-    PClusterGenerator( Rule('any', 'plosive', 'any', []), 
+
+    # ---------------------------------------------------------- #
+    PClusterGenerator( Rule('any', 'plosive', 'any', []),
                        Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( Rule('any', 'fricative', 0, []), 
+    PClusterGenerator( Rule('any', 'plosive', 'any', []),
+                       Rule('any', 'lateral', 'any', [222, 223]) ),
+    # ---------------------------------------------------------- #
+
+    # ---------------------------------------------------------- #
+    PClusterGenerator( Rule('any', 'fricative', 0, [213, 216]),
                        Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
+    PClusterGenerator( Rule('any', 'fricative', 0, [213, 216]),
+                       Rule('any', 'lateral', 'any', [222, 223]) ),
+    # ---------------------------------------------------------- #
+
+    PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
                        Rule('any', 'plosive', 0, []) ),
 
     PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
@@ -265,9 +275,15 @@ POSSIBLE_ONSETS = [
     PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
                        Rule('any', 'fricative', 0, [211, 213, 215]) ),
 
+    # ---------------------------------------------------------- #
     PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
                        Rule('any', 'plosive', 0, []), 
                        Rule('any', 'approximant', 'any', [222, 223]) )
+    # spl
+    # PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
+    #                    Rule('any', 'plosive', 0, [203, 205]),
+    #                    Rule('any', 'lateral', 'any', [222, 223]) )
+    # ---------------------------------------------------------- #
     ]
 
 
@@ -289,12 +305,12 @@ POSSIBLE_CODAS =  [
     PClusterGenerator( Rule('alveolar', 'fricative', 1, []) ),
     PClusterGenerator( Rule('post-alveolar', 'fricative', 0, []) ),
     PClusterGenerator( Rule('post-alveolar', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('glottal', 'fricative', 3, []) ),
+    # PClusterGenerator( Rule('glottal', 'fricative', 3, []) ), # /h/
     PClusterGenerator( Rule('bilabial', 'nasal', 3, []) ),
     PClusterGenerator( Rule('alveolar', 'nasal', 3, []) ),
     PClusterGenerator( Rule('velar', 'nasal', 3, []) ),
     PClusterGenerator( Rule('alveolar', 'approximant', 3, []) ),
-    PClusterGenerator( Rule('palatal', 'approximant', 3, []) ),
+    # PClusterGenerator( Rule('palatal', 'approximant', 3, []) ), #/j/  (like in pure, cute, ...)
     #PClusterGenerator( [['velar', 'approximant', 3, []] ] ), #w
     PClusterGenerator( Rule('alveolar', 'lateral', 3, []) ),
 
@@ -319,27 +335,69 @@ POSSIBLE_CODAS =  [
     PClusterGenerator( Rule('alveolar', 'lateral', 3, []), 
                        Rule('any', 'nasal', 'any', [220]) ),
 
+    # -------  In rhotic varieties, /r/ + nasal or lateral: /rm/, /rn/, /rl/
     PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
                        Rule('any', 'nasal', 'any', [220]) ),
 
     PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
                        Rule('any', 'lateral', 'any', []) ),
+    # ----------------------------------------------------------------------
 
-    PClusterGenerator( Rule('any', 'nasal', 'any', [220]), 
-                       Rule('any', 'plosive', 'any', []) ),  ## homorganic?
+    # ------- Nasal + homorganic stop or affricate: /mp/, /nt/, /nd/, /ntʃ/, /ndʒ/, /ŋk/
+    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    #                    Rule('any', 'plosive', 'any', []) ),  ## homorganic?
+    #
+    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    #                    Rule('any', 'affricate', 'any', []) ),## homorganic?
 
-    PClusterGenerator( Rule('any', 'nasal', 'any', [220]), 
-                       Rule('any', 'affricate', 'any', []) ),## homorganic?
+    # /nt/, /nd/
+    PClusterGenerator( Rule('alveolar', 'nasal', 'any', []),
+                       Rule('alveolar', 'plosive', 'any', []) ),
 
-    PClusterGenerator( Rule('any', 'nasal', 'any', [220]), 
-                       Rule('any', 'fricative', 'any', [216, 217]) ),
+    PClusterGenerator( Rule('bilabial', 'nasal', 'any', []),
+                       Rule('bilabial', 'plosive', 0, []) ),
+    # ----------------------------------------------------------------------
 
-    PClusterGenerator( Rule('any', 'fricative', 0, [216]), 
+    # ------- Nasal + fricative: /mf/, /mθ/, /nθ/, /ns/, /nz/, /ŋθ/ in some varieties
+    # TODO - worth including?
+    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    #                    Rule('any', 'fricative', 'any', [216, 217]) ),
+    #
+    # ----------------------------------------------------------------------
+
+    # ------- Voiceless fricative plus voiceless stop: /ft/, /sp/, /st/, /sk/
+    PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
                        Rule('any', 'plosive', 0, []) ),
 
-    PClusterGenerator( Rule('any', 'plosive', 0, []), 
-                       Rule('any', 'plosive', 0, []) ),
+    PClusterGenerator( Rule('labio-dental', 'fricative', 0, []),
+                       Rule('alveolar', 'plosive', 0, []) ),
+    # ----------------------------------------------------------------------
 
-    PClusterGenerator( Rule('any', 'plosive', 'any', []), 
-                       Rule('any', 'fricative', 0, [216]) )
+    # ------- "Two voiceless stops: /pt/ , /kt/ ------- #
+    # It appears as though only the above are valid, so this is being de-generalized for now
+    # into the next two rules
+    #PClusterGenerator( Rule('any', 'plosive', 0, []),
+    #                   Rule('any', 'plosive', 0, []) ),
+    # /pt/
+    PClusterGenerator( Rule('bilabial', 'plosive', 0, []),
+                       Rule('alveolar', 'plosive', 0, []) ),
+    # /kt/
+    PClusterGenerator( Rule('velar', 'plosive', 0, []),
+                       Rule('alveolar', 'plosive', 0, []) ),
+    # ------- ------- ------- ------- ------- ------- ---
+
+    # ------- "Stop plus voiceless fricative:  /pθ/, /ps/, /tθ/, /ts/, /dθ/, /ks/ ------- #
+    # It looks like the below rule is too generalized; so this is being de-generalized for now
+    # PClusterGenerator( Rule('any', 'plosive', 'any', []),
+    #                    Rule('any', 'fricative', 0, [216]) )
+
+    # /pθ/, /ps/, /tθ/, /ts/
+    PClusterGenerator( Rule('any', 'plosive', 0, [205]),
+                       Rule('any', 'fricative', 0, [209, 215]) ),
+    # /ks/
+    PClusterGenerator( Rule('velar', 'plosive', 0, []),
+                       Rule('alveolar', 'fricative', 0, []) ),
+    # /dθ/
+    PClusterGenerator( Rule('alveolar', 'plosive', 1, []),
+                       Rule('dental', 'fricative', 0, []) )
     ]
