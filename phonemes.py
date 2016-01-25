@@ -181,9 +181,17 @@ CONSONANTS = [
     Consonant('r',  221, 'alveolar',     'approximant', 3, '"r"'), # R - should be also post-alveolar?
     Consonant('y',  222, 'palatal',      'approximant', 3, '"y" consonant, as in "yes"'), # J - really Y
     Consonant('w',  223, 'velar',        'approximant', 3, '"w"'),
-    Consonant('l',  224, 'alveolar',     'lateral',     3, '"l"') 
-    ]
+    Consonant('l',  224, 'alveolar',     'lateral',     3, '"l"'), 
 
+    # Empty word-initial onset
+    Consonant('',   300, 'onset',        'word-initial',       3, ''),
+    # Empty word-final coda
+    Consonant('',   301, 'coda',         'word-final',       3, ''),
+    # Empty mid-word onset
+    Consonant('',   302, 'onset',        'mid-word-initial',       3, ''),
+    # Empty mid-word coda
+    Consonant('',   303, 'coda',         'mid-word-final',       3, '') 
+    ]
 
 
 # Source: https://en.wikipedia.org/wiki/Diphthong#English
@@ -221,6 +229,9 @@ VOWELS = [
     Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ) , description='"oi", as in "toil"')
 
 ]
+
+ID_TO_PHONEME = {phoneme.num: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
+
 
 # A syllable onset is the consonant(s) which begin a syllable
 POSSIBLE_ONSETS = [
@@ -401,3 +412,18 @@ POSSIBLE_CODAS =  [
     PClusterGenerator( Rule('alveolar', 'plosive', 1, []),
                        Rule('dental', 'fricative', 0, []) )
     ]
+
+
+EMPTY_CONSONANTS = [
+    # Word-initial empty syllable onset
+    PCluster(consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
+    # Word-final empty syllable coda
+    PCluster(consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda'),
+    # Mid-word empty syllable onset
+    PCluster(consonant_array=[ID_TO_PHONEME[302]], rule_set='empty mid-word onset'),
+    # Mid-word empty syllable coda
+    PCluster(consonant_array=[ID_TO_PHONEME[303]], rule_set='empty mid-word coda'),
+    ]
+
+
+
