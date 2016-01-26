@@ -52,9 +52,28 @@ class PCluster:
     ''' This class contains an array of phoneme objects for 
     a single cluster. Many "clusters" are a single phoneme,
     but many contain multiple phonemes. '''
-    def __init__(self, consonant_array, rule_set):
+    def __init__(self, cluster_loc, consonant_array, rule_set):
+        self.cluster_loc = cluster_loc
+        
+        # Contains the raw consonants
         self.consonant_array = consonant_array
+        # Contains the unique numbers for the consonants
+        self.consonant_number_array = [c.num for c in self.consonant_array]
+
         self.rule_set = rule_set
+
+    def is_empty(self):
+        ''' Use to see if this cluster is simply a empty phoneme placeholder '''
+        return self.consonant_array[0].num >= 300
+
+    def is_complex(self):
+        return len(self.consonant_array) > 1
+
+    def has_all_phonemes(self, phoneme_nums):
+        return all(phoneme_num in self.consonant_number_array for phoneme_num in phoneme_nums)
+
+    def has_any_phoneme(self, phoneme_nums):
+        return any(phoneme_num in self.consonant_number_array for phoneme_num in phoneme_nums)
 
     def get_string(self):
         cstr = ''
@@ -69,8 +88,9 @@ class PClusterGenerator:
     there are some complex ones like "spr". The clusters are defined by rules,
     and this class will convert those rules into every possible permutation of
     clusters which match the rules '''
-    def __init__(self, *phoneme_properties):
-        self.phoneme_properties = phoneme_properties
+    def __init__(self, cluster_loc, *phoneme_properties):
+        self.cluster_loc = cluster_loc
+        self.phoneme_properties = phoneme_properties[1:]
 
         rule_descriptions = [rule.describe_rule() for rule in self.phoneme_properties]
         self.rule_set = ' followed by '.join(rule_descriptions)
@@ -88,7 +108,7 @@ class PClusterGenerator:
 
         # Filter out any cluster which contains repeated phonemes (Certain generalized rules can cause this to occur)
         # and create the actual phoneme cluster object from this.
-        all_permutations_worked = [PCluster(permutation, self.rule_set) for permutation in all_permutations
+        all_permutations_worked = [PCluster(self.cluster_loc, permutation, self.rule_set) for permutation in all_permutations
                                      if all((phoneme_occurence == 1 for phoneme_occurence in Counter(permutation).values())) ]
 
         return all_permutations_worked        
@@ -235,61 +255,61 @@ ID_TO_PHONEME = {phoneme.num: phoneme for phoneme in itertools.chain(CONSONANTS,
 
 # A syllable onset is the consonant(s) which begin a syllable
 POSSIBLE_ONSETS = [
-    PClusterGenerator( Rule('bilabial', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('bilabial', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('alveolar', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('alveolar', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('velar', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('velar', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'affricate', 0, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'affricate', 1, []) ),
-    PClusterGenerator( Rule('labio-dental', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('labio-dental', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('dental', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('dental', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('alveolar', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'fricative', 0, []) ),
+    PClusterGenerator( 'onset', Rule('bilabial', 'plosive', 0, []) ),
+    PClusterGenerator( 'onset', Rule('bilabial', 'plosive', 1, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'plosive', 0, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'plosive', 1, []) ),
+    PClusterGenerator( 'onset', Rule('velar', 'plosive', 0, []) ),
+    PClusterGenerator( 'onset', Rule('velar', 'plosive', 1, []) ),
+    PClusterGenerator( 'onset', Rule('post-alveolar', 'affricate', 0, []) ),
+    PClusterGenerator( 'onset', Rule('post-alveolar', 'affricate', 1, []) ),
+    PClusterGenerator( 'onset', Rule('labio-dental', 'fricative', 0, []) ),
+    PClusterGenerator( 'onset', Rule('labio-dental', 'fricative', 1, []) ),
+    PClusterGenerator( 'onset', Rule('dental', 'fricative', 0, []) ),
+    PClusterGenerator( 'onset', Rule('dental', 'fricative', 1, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 1, []) ),
+    PClusterGenerator( 'onset', Rule('post-alveolar', 'fricative', 0, []) ),
     #PClusterGenerator( [['post-alveolar', 'fricative', 1, []] ] ),
-    PClusterGenerator( Rule('glottal', 'fricative', 3, []) ),
-    PClusterGenerator( Rule('bilabial', 'nasal', 3, []) ),
-    PClusterGenerator( Rule('alveolar', 'nasal', 3, []) ),
+    PClusterGenerator( 'onset', Rule('glottal', 'fricative', 3, []) ),
+    PClusterGenerator( 'onset', Rule('bilabial', 'nasal', 3, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'nasal', 3, []) ),
     #PClusterGenerator( [['velar', 'nasal', 3, []] ] ),
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []) ),
-    PClusterGenerator( Rule('palatal', 'approximant', 3, []) ),
-    PClusterGenerator( Rule('velar', 'approximant', 3, []) ), # w  -- originally had been commented out
-    PClusterGenerator( Rule('alveolar', 'lateral', 3, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'approximant', 3, []) ),
+    PClusterGenerator( 'onset', Rule('palatal', 'approximant', 3, []) ),
+    PClusterGenerator( 'onset', Rule('velar', 'approximant', 3, []) ), # w  -- originally had been commented out
+    PClusterGenerator( 'onset', Rule('alveolar', 'lateral', 3, []) ),
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( Rule('any', 'plosive', 'any', []),
-                       Rule('any', 'approximant', 'any', [222, 223]) ),
+    PClusterGenerator( 'onset', Rule('any', 'plosive', 'any', []),
+                                Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( Rule('any', 'plosive', 'any', []),
-                       Rule('any', 'lateral', 'any', [222, 223]) ),
+    PClusterGenerator( 'onset', Rule('any', 'plosive', 'any', []),
+                                Rule('any', 'lateral', 'any', [222, 223]) ),
     # ---------------------------------------------------------- #
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( Rule('any', 'fricative', 0, [213, 216]),
-                       Rule('any', 'approximant', 'any', [222, 223]) ),
+    PClusterGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
+                                Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( Rule('any', 'fricative', 0, [213, 216]),
-                       Rule('any', 'lateral', 'any', [222, 223]) ),
+    PClusterGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
+                                Rule('any', 'lateral', 'any', [222, 223]) ),
     # ---------------------------------------------------------- #
 
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
-                       Rule('any', 'plosive', 0, []) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []),
+                                Rule('any', 'plosive', 0, []) ),
 
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
-                       Rule('any', 'nasal', 'any', [220]) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+                                Rule('any', 'nasal', 'any', [220]) ),
 
     #PClusterGenerator( [[213, 'any', []], ['fricative', 'any', 0, [211, 212, 213, 215, 216]] ] ),
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
-                       Rule('any', 'fricative', 0, [211, 213, 215]) ),
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+                                Rule('any', 'fricative', 0, [211, 213, 215]) ),
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []), 
-                       Rule('any', 'plosive', 0, []), 
-                       Rule('any', 'approximant', 'any', [222, 223]) )
+    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+                                Rule('any', 'plosive', 0, []), 
+                                Rule('any', 'approximant', 'any', [222, 223]) )
     # spl
     # PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
     #                    Rule('any', 'plosive', 0, [203, 205]),
@@ -300,58 +320,58 @@ POSSIBLE_ONSETS = [
 
 # A syllable coda is the consonant(s) which end a syllable
 POSSIBLE_CODAS =  [
-    PClusterGenerator( Rule('bilabial', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('bilabial', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('alveolar', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('alveolar', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('velar', 'plosive', 0, []) ),
-    PClusterGenerator( Rule('velar', 'plosive', 1, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'affricate', 0, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'affricate', 1, []) ),
-    PClusterGenerator( Rule('labio-dental', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('labio-dental', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('dental', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('dental', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('alveolar', 'fricative', 1, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( Rule('post-alveolar', 'fricative', 1, []) ),
+    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 1, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 1, []) ),
+    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('velar', 'plosive', 1, []) ),
+    PClusterGenerator( 'coda', Rule('post-alveolar', 'affricate', 0, []) ),
+    PClusterGenerator( 'coda', Rule('post-alveolar', 'affricate', 1, []) ),
+    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []) ),
+    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 1, []) ),
+    PClusterGenerator( 'coda', Rule('dental', 'fricative', 0, []) ),
+    PClusterGenerator( 'coda', Rule('dental', 'fricative', 1, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 0, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 1, []) ),
+    PClusterGenerator( 'coda', Rule('post-alveolar', 'fricative', 0, []) ),
+    PClusterGenerator( 'coda', Rule('post-alveolar', 'fricative', 1, []) ),
     # PClusterGenerator( Rule('glottal', 'fricative', 3, []) ), # /h/
-    PClusterGenerator( Rule('bilabial', 'nasal', 3, []) ),
-    PClusterGenerator( Rule('alveolar', 'nasal', 3, []) ),
-    PClusterGenerator( Rule('velar', 'nasal', 3, []) ),
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []) ),
+    PClusterGenerator( 'coda', Rule('bilabial', 'nasal', 3, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'nasal', 3, []) ),
+    PClusterGenerator( 'coda', Rule('velar', 'nasal', 3, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []) ),
     # PClusterGenerator( Rule('palatal', 'approximant', 3, []) ), #/j/  (like in pure, cute, ...)
     #PClusterGenerator( [['velar', 'approximant', 3, []] ] ), #w
-    PClusterGenerator( Rule('alveolar', 'lateral', 3, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []) ),
 
-    PClusterGenerator( Rule('alveolar', 'lateral', 3, []), 
-                       Rule('any', 'plosive', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
+                               Rule('any', 'plosive', 'any', []) ),
 
-    PClusterGenerator( Rule('alveolar', 'lateral', 3,  []), 
-                       Rule('any', 'affricate', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3,  []), 
+                               Rule('any', 'affricate', 'any', []) ),
 
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
-                       Rule('any', 'plosive', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+                               Rule('any', 'plosive', 'any', []) ),
 
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
-                       Rule('any', 'affricate', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+                               Rule('any', 'affricate', 'any', []) ),
 
-    PClusterGenerator( Rule('alveolar', 'lateral', 3, []),
-                       Rule('any', 'fricative', 'any', [216, 217]) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []),
+                               Rule('any', 'fricative', 'any', [216, 217]) ),
 
-    PClusterGenerator( Rule('alveolar', 'approximant', 3,  []), 
-                       Rule('any', 'fricative', 'any', [216, 217]) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3,  []), 
+                               Rule('any', 'fricative', 'any', [216, 217]) ),
 
-    PClusterGenerator( Rule('alveolar', 'lateral', 3, []), 
-                       Rule('any', 'nasal', 'any', [220]) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
+                               Rule('any', 'nasal', 'any', [220]) ),
 
     # -------  In rhotic varieties, /r/ + nasal or lateral: /rm/, /rn/, /rl/
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
-                       Rule('any', 'nasal', 'any', [220]) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+                               Rule('any', 'nasal', 'any', [220]) ),
 
-    PClusterGenerator( Rule('alveolar', 'approximant', 3, []), 
-                       Rule('any', 'lateral', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+                               Rule('any', 'lateral', 'any', []) ),
     # ----------------------------------------------------------------------
 
     # ------- Nasal + homorganic stop or affricate: /mp/, /nt/, /nd/, /ntʃ/, /ndʒ/, /ŋk/
@@ -362,11 +382,11 @@ POSSIBLE_CODAS =  [
     #                    Rule('any', 'affricate', 'any', []) ),## homorganic?
 
     # /nt/, /nd/
-    PClusterGenerator( Rule('alveolar', 'nasal', 'any', []),
-                       Rule('alveolar', 'plosive', 'any', []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'nasal', 'any', []),
+                               Rule('alveolar', 'plosive', 'any', []) ),
 
-    PClusterGenerator( Rule('bilabial', 'nasal', 'any', []),
-                       Rule('bilabial', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('bilabial', 'nasal', 'any', []),
+                               Rule('bilabial', 'plosive', 0, []) ),
     # ----------------------------------------------------------------------
 
     # ------- Nasal + fricative: /mf/, /mθ/, /nθ/, /ns/, /nz/, /ŋθ/ in some varieties
@@ -377,11 +397,11 @@ POSSIBLE_CODAS =  [
     # ----------------------------------------------------------------------
 
     # ------- Voiceless fricative plus voiceless stop: /ft/, /sp/, /st/, /sk/
-    PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
-                       Rule('any', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 0, []),
+                               Rule('any', 'plosive', 0, []) ),
 
-    PClusterGenerator( Rule('labio-dental', 'fricative', 0, []),
-                       Rule('alveolar', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []),
+                               Rule('alveolar', 'plosive', 0, []) ),
     # ----------------------------------------------------------------------
 
     # ------- "Two voiceless stops: /pt/ , /kt/ ------- #
@@ -390,11 +410,11 @@ POSSIBLE_CODAS =  [
     #PClusterGenerator( Rule('any', 'plosive', 0, []),
     #                   Rule('any', 'plosive', 0, []) ),
     # /pt/
-    PClusterGenerator( Rule('bilabial', 'plosive', 0, []),
-                       Rule('alveolar', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 0, []),
+                               Rule('alveolar', 'plosive', 0, []) ),
     # /kt/
-    PClusterGenerator( Rule('velar', 'plosive', 0, []),
-                       Rule('alveolar', 'plosive', 0, []) ),
+    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []),
+                               Rule('alveolar', 'plosive', 0, []) ),
     # ------- ------- ------- ------- ------- ------- ---
 
     # ------- "Stop plus voiceless fricative:  /pθ/, /ps/, /tθ/, /ts/, /dθ/, /ks/ ------- #
@@ -403,26 +423,26 @@ POSSIBLE_CODAS =  [
     #                    Rule('any', 'fricative', 0, [216]) )
 
     # /pθ/, /ps/, /tθ/, /ts/
-    PClusterGenerator( Rule('any', 'plosive', 0, [205]),
-                       Rule('any', 'fricative', 0, [209, 215]) ),
+    PClusterGenerator( 'coda', Rule('any', 'plosive', 0, [205]),
+                               Rule('any', 'fricative', 0, [209, 215]) ),
     # /ks/
-    PClusterGenerator( Rule('velar', 'plosive', 0, []),
-                       Rule('alveolar', 'fricative', 0, []) ),
+    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []),
+                               Rule('alveolar', 'fricative', 0, []) ),
     # /dθ/
-    PClusterGenerator( Rule('alveolar', 'plosive', 1, []),
-                       Rule('dental', 'fricative', 0, []) )
+    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 1, []),
+                               Rule('dental', 'fricative', 0, []) )
     ]
 
 
 EMPTY_CONSONANTS = [
     # Word-initial empty syllable onset
-    PCluster(consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
+    PCluster(cluster_loc='onset', consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
     # Word-final empty syllable coda
-    PCluster(consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda'),
+    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda'),
     # Mid-word empty syllable onset
-    PCluster(consonant_array=[ID_TO_PHONEME[302]], rule_set='empty mid-word onset'),
+    PCluster(cluster_loc='onset', consonant_array=[ID_TO_PHONEME[302]], rule_set='empty mid-word onset'),
     # Mid-word empty syllable coda
-    PCluster(consonant_array=[ID_TO_PHONEME[303]], rule_set='empty mid-word coda'),
+    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[303]], rule_set='empty mid-word coda'),
     ]
 
 
