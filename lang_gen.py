@@ -74,6 +74,14 @@ class Language:
                 probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
                 self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
+        # Prob of methods:  plosive, affricate, fricative, nasal, approximant, lateral
+        #  -- Some langs may drop any of these entirely
+        # Prob of locations: bilabial, alveolar, velar, post-alveolar, labio-dental, dental, glottal, palatal
+        #  -- Some langs may drop any of these entirely
+        # Voicings: voiced, unvoiced
+        #  -- Some langs may force only voiced or unvoiced consonants
+        #       -- Specific rules on an onset or coda level? (only voiced syllables in onset / coda, etc)
+        # Prob of no onset / coda
 
     def create_word(self, syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
