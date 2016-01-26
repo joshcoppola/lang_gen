@@ -2,7 +2,7 @@
 from random import randint as roll
 import random
 
-from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS
+from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS, CHECKED_VOWEL_NUMS
 
 import orthography
 
@@ -69,16 +69,14 @@ class Language:
             # { {vowel: {cluster: prob}, {cluster: prob}, ...}, {vowel2:{ ... } }  }
             self.vowel_probabilities_by_preceding_cluster[v] = {}
             self.vowel_probabilities_by_following_cluster[v] = {}
-            
-            diphthong = len(v.position) > 1
 
             # Choose between low, medium, and high probabilities for this vowel to occur after and before onset and coda clusters
             for (onset, probability) in self.onset_probabilities.iteritems():
-                probability = roll(75, 150) if not diphthong else roll(1, 10)
+                probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
                 self.vowel_probabilities_by_preceding_cluster[v][onset] = probability
             
             for (coda, probability) in self.coda_probabilities.iteritems():
-                probability = roll(75, 150) if not diphthong else roll(1, 10)
+                probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
                 self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
 
@@ -90,15 +88,12 @@ class Language:
         coda = None
 
         for i in xrange(syllables):            
-            
-            onset = self.choose_valid_onset(previous_coda=coda)
-            coda  = self.choose_valid_coda(onset=onset)
+            syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=syllables)
 
-            # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
-            vowel_probabilities = {v: self.vowel_probabilities_by_preceding_cluster[v][onset] + 
-                                      self.vowel_probabilities_by_following_cluster[v][coda] for v in self.valid_vowels}
+            onset = self.choose_valid_onset(previous_coda=coda, syllable_position=syllable_position)
+            coda  = self.choose_valid_coda(onset=onset, syllable_position=syllable_position)
 
-            vowel = weighted_random(vowel_probabilities)
+            vowel = self.choose_valid_vowel(onset=onset, coda=coda, syllable_position=syllable_position)
 
             word.extend([c.num for c in onset.consonant_array])
             word.append(vowel.num)
@@ -109,7 +104,7 @@ class Language:
         # print ''.join([orthography.PHONEMES_WRITTEN[phoneme] for phoneme in word])
 
 
-    def choose_valid_onset(self, previous_coda):
+    def choose_valid_onset(self, previous_coda, syllable_position):
         ''' Business logic for determining whether an onset is valid, given the previous coda and other constraints '''
 
         # At the beginning of the word, any onset is valid
@@ -118,6 +113,10 @@ class Language:
 
         # Otherwise, if the previous coda was complex, we'll assign an empty onset
         elif previous_coda.is_complex():
+            onset = EMPTY_CONSONANTS[0]
+
+        # No onsets for syllables in the middle of the word if the previous syllable has a coda
+        elif syllable_position == 1 and not previous_coda.is_empty():
             onset = EMPTY_CONSONANTS[0]
 
         # Otherwise, generate an onset with some restrictions
@@ -141,23 +140,77 @@ class Language:
 
         return onset
 
-    def choose_valid_coda(self, onset):
+    def choose_valid_coda(self, onset, syllable_position):
         ''' Business logic for determining whether a coda is valid, given the syllable onset and other constraints '''
 
-        # No /l/ or /r/ in codas when the onset contains one of these 
-        restrict_rl = onset.has_any_phoneme( (221, 224) )
+        # No onsets for syllables in the middle of the word if the previous syllable has a coda
+        if syllable_position == 1:
+            coda = EMPTY_CONSONANTS[1]
 
-        while True:
-            coda = weighted_random(self.coda_probabilities)
-
+        else:
             # No /l/ or /r/ in codas when the onset contains one of these 
-            if restrict_rl and coda.has_any_phoneme( (221, 224)):
-                continue
+            restrict_rl = onset.has_any_phoneme( (221, 224) )
 
-            # If the coda has made it through the gauntlet, break out of the loop and return it
-            break
+            while True:
+                coda = weighted_random(self.coda_probabilities)
+
+                # No /l/ or /r/ in codas when the onset contains one of these 
+                if restrict_rl and coda.has_any_phoneme( (221, 224)):
+                    continue
+
+                # If the coda has made it through the gauntlet, break out of the loop and return it
+                break
 
         return coda
+
+
+    def choose_valid_vowel(self, onset, coda, syllable_position):
+        ''' Choose a valid vowel given an onset, coda, and syllable position '''
+
+        # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
+        vowel_probabilities = {v: self.vowel_probabilities_by_preceding_cluster[v][onset] + 
+                                  self.vowel_probabilities_by_following_cluster[v][coda] for v in self.valid_vowels}
+        
+        while True:
+            # Generate the vowel based off of the combined weighings of the vowels surrounding it
+            vowel = weighted_random(vowel_probabilities)
+
+            # A checked vowel cannot occur if there is no consonant in the coda
+            if coda.is_empty() and vowel.num in CHECKED_VOWEL_NUMS:
+                continue
+
+            # A diphthong cannot occur before /ng/ # TODO - Exclude long vowels as well
+            if coda.consonant_number_array[0] == 220 and vowel.is_diphthong():
+                continue
+
+            # If the vowel has made it through the gauntlet, break out of the loop and return it
+            break
+
+
+        return vowel
+
+
+
+    def get_syllable_position(self, current_syllable, total_syllables):
+        ''' Get the position of a syllable within a word
+            - 1 = only 1 syllable in the word
+            0   = word initial
+            1   = middle
+            2   = final
+        '''
+
+        # Only 1 syllable in the word
+        if total_syllables == 1:
+            return -1
+        # On the first syllable
+        if current_syllable == 0:
+            return 0
+        # On the last syllable
+        elif current_syllable == total_syllables - 1:
+            return 2
+        # Otherwise, it's in the middle
+        else:
+            return 1
 
 
     def info_dump(self):
@@ -219,7 +272,7 @@ if __name__ == '__main__':
     # t.info_dump()
     
     for i in xrange(20):
-        t.create_word(syllables=roll(1, 2))
+        t.create_word(syllables=roll(1, 3))
 
     print ''
 
