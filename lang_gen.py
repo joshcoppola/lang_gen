@@ -2,7 +2,7 @@
 from random import randint as roll
 import random
 
-from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS, CHECKED_VOWEL_NUMS
+from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS
 
 import orthography
 
@@ -25,9 +25,6 @@ class Language:
 
         self.valid_vowels = set()
         self.valid_consonants = set()
-
-        self.first_onset_no_consonant_chance = roll(20, 80)
-        self.final_coda_no_consonant_chance = roll(20, 80)
 
     def generate_language_properties(self):
         ''' Determine the phonemes which are valid in this language and the 
@@ -58,9 +55,7 @@ class Language:
 
         # The placeholder "clusters" for empty onsets/codas
         self.onset_probabilities[EMPTY_CONSONANTS[0]] = int(roll(500, 1000))
-        #self.onset_probabilities[EMPTY_CONSONANTS[2]] = int(roll(100, 200))
         self.coda_probabilities[EMPTY_CONSONANTS[1]] = int(roll(450, 900))
-        #self.coda_probabilities[EMPTY_CONSONANTS[3]] = int(roll(100, 200))
 
         # Set vowel probabilities, can vary on preceding and following cluster
         for v in self.valid_vowels:
@@ -175,12 +170,12 @@ class Language:
             # Generate the vowel based off of the combined weighings of the vowels surrounding it
             vowel = weighted_random(vowel_probabilities)
 
-            # A checked vowel cannot occur if there is no consonant in the coda
-            if coda.is_empty() and vowel.num in CHECKED_VOWEL_NUMS:
+            # A short vowel cannot occur if there is no consonant in the coda
+            if coda.is_empty() and vowel.length == 'short':
                 continue
 
-            # A diphthong cannot occur before /ng/ # TODO - Exclude long vowels as well
-            if coda.consonant_number_array[0] == 220 and vowel.is_diphthong():
+            # Only short vowels can occur before /ng/
+            if coda.consonant_number_array[0] == 220 and vowel.length != 'short':
                 continue
 
             # If the vowel has made it through the gauntlet, break out of the loop and return it

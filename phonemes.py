@@ -30,7 +30,7 @@ class Consonant:
         print 'Consonant {0} {1} {2} {3}'.format(self.num, self.location, self.method, self.voicing)
 
 class Vowel:
-    def __init__(self, char, num, position, checked, description):
+    def __init__(self, char, num, position, length, description):
         self.char = char
         self.num = num
         # Tuple of tuples. Each sub-tuple is an xy pair of tongue position / tongue height
@@ -38,8 +38,8 @@ class Vowel:
         # and diphthongs have two sub-tuples
         self.position = position
 
-        # Checked vowels must be follwed by a consonant in stressed syllables
-        self.checked = checked
+        # Short, long, or diphthong
+        self.length = length
 
         self.description = description
 
@@ -221,7 +221,7 @@ CONSONANTS = [
 
 # Source: https://en.wikipedia.org/wiki/Diphthong#English
 # low    oʊ ~ ʌʊ   8, 5 -> 9, 7
-# loud   aʊ̯~ æʊ   5, 0 -> 5, 6
+# loud   aʊ̯~ æʊ    5, 0 -> 5, 6
 # -lout             covered ^
 # lied   äɪ        3, 0 -> 4, 7
 # -light ʌɪ         covered ^
@@ -236,29 +236,26 @@ CONSONANTS = [
 VOWELS = [
 
     # -- Monophthongs -- #
-    Vowel(char='i',  num=101, position=( (0, 7), ),  checked=1, description='short "i", as in "sit"'),
-    Vowel(char='e',  num=102, position=( (0, 9), ),  checked=0, description='long "e", as in "see"'),
-    Vowel(char='u',  num=103, position=( (5, 2), ),  checked=1, description='short "u", as in "up"'),
-    Vowel(char='e',  num=114, position=( (0, 5), ),  checked=1, description='short "e", as in "beg"'),
-    Vowel(char='a',  num=105, position=( (0, 2), ),  checked=1, description='short "a", as in "bad"'),
-    Vowel(char='aa', num=107, position=( (9, 1), ),  checked=0, description='flat "a", as in "ah"'), #hot
-    Vowel(char='oo', num=110, position=( (9, 7), ),  checked=1, description='short "i", as in "put"'),
-    Vowel(char='ue', num=111, position=( (9, 9), ),  checked=0, description='long "u", as in "blue"'),
-    Vowel(char='au', num=112, position=( (9, 3), ),  checked=0, description='"aw", as in "saw"'),
+    Vowel(char='i',  num=101, position=( (0, 7), ),  length='short', description='short "i", as in "sit"'),     # /ɪ/
+    Vowel(char='e',  num=102, position=( (0, 9), ),  length='long' , description='long "e", as in "see"'),      # /i(ː)/
+    Vowel(char='u',  num=103, position=( (5, 2), ),  length='short', description='short "u", as in "up"'),      # /ʌ/
+    Vowel(char='e',  num=114, position=( (0, 5), ),  length='short', description='short "e", as in "beg"'),     # /ɛ/
+    Vowel(char='a',  num=105, position=( (0, 2), ),  length='short', description='short "a", as in "bad"'),     # /æ/
+    Vowel(char='aa', num=107, position=( (9, 1), ),  length='long' , description='flat "a", as in "ah"'),       # /ɑ/
+    Vowel(char='oo', num=110, position=( (9, 7), ),  length='short', description='short "i", as in "put"'),     # /ʊ/
+    Vowel(char='ue', num=111, position=( (9, 9), ),  length='long' , description='long "u", as in "blue"'),     # /uː/
+    Vowel(char='au', num=112, position=( (9, 3), ),  length='long' , description='"aw", as in "saw"'),          # /ɔ/
 
     # -- Diphthongs -- #
-    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  checked=0, description='long "a", as in "gate"'),  ## Really diphthong!
-    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  checked=0, description='long "i", as in "hide"'), #diphthong?
-    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  checked=0, description='long "o", as in "toe"'),  # diphthong
-    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  checked=0, description='"ou", as in "out"'),
-    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ),  checked=0, description='"oi", as in "toil"')
+    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  length='diphthong', description='long "a", as in "gate"'),  # eɪ
+    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  length='diphthong', description='long "i", as in "hide"'),  # äɪ
+    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  length='diphthong', description='long "o", as in "toe"'),   # oʊ
+    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  length='diphthong', description='"ou", as in "out"'),       # aʊ
+    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ),  length='diphthong', description='"oi", as in "toil"')       # ɔɪ
 
 ]
 
 ID_TO_PHONEME = {phoneme.num: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
-
-# Set of vowels which must be followed by a consonant
-CHECKED_VOWEL_NUMS = {vowel.num for vowel in VOWELS if vowel.checked}
 
 
 # A syllable onset is the consonant(s) which begin a syllable
@@ -446,11 +443,7 @@ EMPTY_CONSONANTS = [
     # Word-initial empty syllable onset
     PCluster(cluster_loc='onset', consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
     # Word-final empty syllable coda
-    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda'),
-    # Mid-word empty syllable onset
-    PCluster(cluster_loc='onset', consonant_array=[ID_TO_PHONEME[302]], rule_set='empty mid-word onset'),
-    # Mid-word empty syllable coda
-    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[303]], rule_set='empty mid-word coda'),
+    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda')
     ]
 
 
