@@ -196,26 +196,26 @@ class Orthography:
         self.mapping = {}
 
         # Making copies of the possible written vowel representations, to be modified here
-        self.unproc_mapping = {phoneme: PHONEME_WRITTEN[phoneme] for phoneme in PHONEME_WRITTEN}
+        self.unproc_mapping = {phoneme: PHONEMES_WRITTEN[phoneme] for phoneme in PHONEMES_WRITTEN}
 
 
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
-        if roll(1, 15) == 1:
-            self.unproc_mapping[101] = {'y':1, y_u:1}
-            self.unproc_mapping[108] = {'y':1, y_u:1}
-            # Swap the 'y' consonant with a 'j'
-            self.unproc_mapping[222] = {'j':1}
+        # if roll(1, 15) == 1:
+        #     self.unproc_mapping[101] = {'y':1, y_u:1}
+        #     self.unproc_mapping[108] = {'y':1, y_u:1}
+        #     # Swap the 'y' consonant with a 'j'
+        #     self.unproc_mapping[222] = {'j':1}
 
-        # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
-        if roll(0, 15) == 1:
-            self.replace_grapheme(phoneme_num=211, old='clear_all', new=sigma, new_prob=1)
-            self.replace_grapheme(phoneme_num=212, old='clear_all', new=sigma, new_prob=1)
+        # # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
+        # if roll(0, 15) == 1:
+        #     self.replace_grapheme(phoneme_num=211, old='clear_all', new=sigma, new_prob=1)
+        #     self.replace_grapheme(phoneme_num=212, old='clear_all', new=sigma, new_prob=1)
     
-        # Use ƒ instead of sh
-        if roll(0, 15) == 1:
-            self.replace_grapheme(phoneme_num=215, old='sh', new=strange_f, new_prob=1)
-            self.replace_grapheme(phoneme_num=216, old='zh', new=strange_f, new_prob=1)
+        # # Use ƒ instead of sh
+        # if roll(0, 15) == 1:
+        #     self.replace_grapheme(phoneme_num=215, old='sh', new=strange_f, new_prob=1)
+        #     self.replace_grapheme(phoneme_num=216, old='zh', new=strange_f, new_prob=1)
 
 
         ## TODO ## 
@@ -224,11 +224,11 @@ class Orthography:
         # can be suitably recognizeable 
 
         # Here's where consonants get mapped
-        for phoneme_num, graphemes_and_probs in self.unproc_mapping.iteritems():
-            # Pick a grapheme to represent this phoneme via weighted choice 
-            grapheme = weighted_choice(graphemes_and_probs)
-            # Apply it to our mapping dict
-            self.mapping[phoneme_num] = grapheme
+        # for phoneme_num, graphemes_and_probs in self.unproc_mapping.iteritems():
+        #     # Pick a grapheme to represent this phoneme via weighted choice 
+        #     grapheme = weighted_random(graphemes_and_probs)
+        #     # Apply it to our mapping dict
+        #     self.mapping[phoneme_num] = grapheme
 
     def replace_grapheme(self, phoneme_num, old, new, new_prob):
         ''' Replace an instance of a possible grapheme with a new possible grapheme '''
@@ -242,4 +242,17 @@ class Orthography:
 
         # Add in the new grapheme and its probability into the mix
         self.unproc_mapping[phoneme_num][new] = new_prob
+
+
+    def phon_to_orth(self, phoneme_sequence):
+
+        orth = ''
+
+        for p in phoneme_sequence:
+            orth += PHONEMES_WRITTEN[p]
+
+
+        print orth
+
+
 
