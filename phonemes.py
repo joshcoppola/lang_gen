@@ -30,7 +30,7 @@ class Consonant:
         print 'Consonant {0} {1} {2} {3}'.format(self.num, self.location, self.method, self.voicing)
 
 class Vowel:
-    def __init__(self, char, num, position, description):
+    def __init__(self, char, num, position, checked, description):
         self.char = char
         self.num = num
         # Tuple of tuples. Each sub-tuple is an xy pair of tongue position / tongue height
@@ -38,8 +38,13 @@ class Vowel:
         # and diphthongs have two sub-tuples
         self.position = position
 
+        # Checked vowels must be follwed by a consonant in stressed syllables
+        self.checked = checked
+
         self.description = description
 
+    def is_diphthong(self):
+        return len(self.position) > 1
 
     def info(self):
         print 'Vowel {0} {1}'.format(self.num, self.char)
@@ -231,26 +236,29 @@ CONSONANTS = [
 VOWELS = [
 
     # -- Monophthongs -- #
-    Vowel(char='i',  num=101, position=( (0, 7), ),  description='short "i", as in "sit"'),
-    Vowel(char='e',  num=102, position=( (0, 9), ),  description='long "e", as in "see"'),
-    Vowel(char='u',  num=103, position=( (5, 2), ),  description='short "u", as in "up"'),
-    Vowel(char='e',  num=114, position=( (0, 5), ),  description='short "e", as in "beg"'),
-    Vowel(char='a',  num=105, position=( (0, 2), ),  description='short "a", as in "bad"'),
-    Vowel(char='aa', num=107, position=( (9, 1), ),  description='flat "a", as in "ah"'), #hot
-    Vowel(char='oo', num=110, position=( (9, 7), ),  description='short "oo", as in "good"'),
-    Vowel(char='ue', num=111, position=( (9, 9), ),  description='long "u", as in "blue"'),
-    Vowel(char='au', num=112, position=( (9, 3), ),  description='"aw", as in "saw"'),
+    Vowel(char='i',  num=101, position=( (0, 7), ),  checked=1, description='short "i", as in "sit"'),
+    Vowel(char='e',  num=102, position=( (0, 9), ),  checked=0, description='long "e", as in "see"'),
+    Vowel(char='u',  num=103, position=( (5, 2), ),  checked=1, description='short "u", as in "up"'),
+    Vowel(char='e',  num=114, position=( (0, 5), ),  checked=1, description='short "e", as in "beg"'),
+    Vowel(char='a',  num=105, position=( (0, 2), ),  checked=1, description='short "a", as in "bad"'),
+    Vowel(char='aa', num=107, position=( (9, 1), ),  checked=0, description='flat "a", as in "ah"'), #hot
+    Vowel(char='oo', num=110, position=( (9, 7), ),  checked=1, description='short "i", as in "put"'),
+    Vowel(char='ue', num=111, position=( (9, 9), ),  checked=0, description='long "u", as in "blue"'),
+    Vowel(char='au', num=112, position=( (9, 3), ),  checked=0, description='"aw", as in "saw"'),
 
     # -- Diphthongs -- #
-    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  description='long "a", as in "gate"'),  ## Really diphthong!
-    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  description='long "i", as in "hide"'), #diphthong?
-    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  description='long "o", as in "toe"'),  # diphthong
-    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  description='"ou", as in "out"'),
-    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ) , description='"oi", as in "toil"')
+    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  checked=0, description='long "a", as in "gate"'),  ## Really diphthong!
+    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  checked=0, description='long "i", as in "hide"'), #diphthong?
+    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  checked=0, description='long "o", as in "toe"'),  # diphthong
+    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  checked=0, description='"ou", as in "out"'),
+    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ),  checked=0, description='"oi", as in "toil"')
 
 ]
 
 ID_TO_PHONEME = {phoneme.num: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
+
+# Set of vowels which must be followed by a consonant
+CHECKED_VOWEL_NUMS = {vowel.num for vowel in VOWELS if vowel.checked}
 
 
 # A syllable onset is the consonant(s) which begin a syllable
