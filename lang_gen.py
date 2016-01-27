@@ -23,39 +23,64 @@ class Language:
         self.vocabulary = {}
         self.orthography = orthography.Orthography()
 
-        self.valid_vowels = set()
-        self.valid_consonants = set()
+        self.valid_vowels = set(VOWELS)
+        self.valid_consonants = set([c for c in CONSONANTS if c.num < 300])
 
     def generate_language_properties(self):
         ''' Determine the phonemes which are valid in this language and the 
             frequency at which they occur '''
-            
-        # Start off by randomly discarding some phonemes that will never be used in this language
-        for c in CONSONANTS:
-            if roll(1, 100) > 15 and c.num < 300:
-                self.valid_consonants.add(c)
 
-        for v in VOWELS:
-            if roll(1, 100) > 15: #and v.type != 'diphthong':
-                self.valid_vowels.add(v)
+        # Prob of methods:  plosive, affricate, fricative, nasal, approximant, lateral
+        #  -- Some langs may drop any of these entirely
+        # Prob of locations: bilabial, alveolar, velar, post-alveolar, labio-dental, dental, glottal, palatal
+        #  -- Some langs may drop any of these entirely
+        # Voicings: voiced, unvoiced
+        #  -- Some langs may force only voiced or unvoiced consonants
+        #       -- Specific rules on an onset or coda level? (only voiced consonants in onset / coda, etc)
+        # Prob of no onset / coda
+
+        consonant_methods = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
+        consonant_locations = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 'dental', 'glottal', 'palatal')
+        voicings = (0, 1)
+
+        for i in xrange( roll(1, 2) ):
+            method = random.choice(consonant_methods)
+            print 'Dropping all {0}s'.format(method)
+            self.drop_consonants(method=method)
+
+        for i in xrange( roll(1, 2) ):
+            location = random.choice(consonant_locations)
+            print 'Dropping all {0}s'.format(location)
+            self.drop_consonants(location=location)
+
+        if roll(1, 5) == 1:
+            voicings = random.choice(voicings)
+            print 'Dropping with voicing of {0}'.format(voicings)
+            self.drop_consonants(voicings=voicings)
+
+        # Chance of no onset compared to other syllables
+        no_onset_multiplier = random.choice( (.1, .5, 1, 1, 2, 10) )
+
+        no_coda_multiplier =  random.choice( (.1, .25, .5, .5, 1, 2) )
+
+        print 'No onset mutiplier: {0}\nNo coda multiplier: {1}\n'.format(no_onset_multiplier, no_coda_multiplier)
+
+
+
+
+        # self.drop_consonants(method='fricative')
+        # self.drop_consonants(voicing=0)
 
         # Now, figure out probabilities for each of the onsets and codas
         # If this language contains all consonants in a possible onset or coda, add a random frequency at which the it occurs
-        for o in ALL_ONSETS:
-            if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
-                # Reduce the probability of complex onsets
-                if len(o.consonant_array) == 1:     self.onset_probabilities[o] = roll(75, 200)
-                elif len(o.consonant_array) > 1:    self.onset_probabilities[o] = roll(1, 5)
+        self.generate_valid_onsets()
 
-        for c in ALL_CODAS:
-            if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
-                # Reduce the probability of complex codas
-                if len(c.consonant_array) == 1:     self.coda_probabilities[c] = roll(75, 200)
-                elif len(c.consonant_array) > 1:    self.coda_probabilities[c] = roll(1, 5)
+        self.generate_valid_codas()
+    
 
         # The placeholder "clusters" for empty onsets/codas
-        self.onset_probabilities[EMPTY_CONSONANTS[0]] = int(roll(500, 1000))
-        self.coda_probabilities[EMPTY_CONSONANTS[1]] = int(roll(450, 900))
+        self.onset_probabilities[EMPTY_CONSONANTS[0]] = int(sum(self.onset_probabilities.values()) * no_onset_multiplier)
+        self.coda_probabilities[EMPTY_CONSONANTS[1]] =  int(sum(self.coda_probabilities.values())  * no_coda_multiplier) 
 
         # Set vowel probabilities, can vary on preceding and following cluster
         for v in self.valid_vowels:
@@ -74,14 +99,45 @@ class Language:
                 probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
                 self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
-        # Prob of methods:  plosive, affricate, fricative, nasal, approximant, lateral
-        #  -- Some langs may drop any of these entirely
-        # Prob of locations: bilabial, alveolar, velar, post-alveolar, labio-dental, dental, glottal, palatal
-        #  -- Some langs may drop any of these entirely
-        # Voicings: voiced, unvoiced
-        #  -- Some langs may force only voiced or unvoiced consonants
-        #       -- Specific rules on an onset or coda level? (only voiced syllables in onset / coda, etc)
-        # Prob of no onset / coda
+
+    def generate_valid_onsets(self):
+        # no_complex_onsets = 1 if roll(1, 10) == 10 else 0
+
+        for o in ALL_ONSETS:
+            if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
+                # Reduce the probability of complex onsets
+                if   not o.is_complex():  self.onset_probabilities[o] = roll(75, 200)
+                elif not o.is_empty():    self.onset_probabilities[o] = roll(5, 15)
+
+
+    def generate_valid_codas(self):
+        for c in ALL_CODAS:
+            if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
+                # Reduce the probability of complex codas
+                if   not c.is_complex():  self.coda_probabilities[c] = roll(75, 200)
+                elif not c.is_empty():    self.coda_probabilities[c] = roll(5, 15)
+
+
+    def get_matching_consonants(self, location='any', method='any', voicing='any', exclude_matches=0):
+        ''' Given a set of parameters, return an array of consonants that match the parameters '''
+        matches = [c for c in self.valid_consonants 
+                    if  (location == c.location or location == 'any') 
+                    and (method   == c.method   or method   == 'any') 
+                    and (voicing  == c.voicing  or voicing  == 'any') 
+                    ]
+
+        # exclude_matches as basically "not" - if that option is toggled on, build a new list of all 
+        # results which didn't match the query. 
+        if not exclude_matches: query_result = matches  
+        else:                   query_result = [c for c in self.valid_consonants if c not in matches]
+
+        return query_result
+
+    def drop_consonants(self, location='any', method='any', voicing='any'):
+        ''' Remove a set of consonants matching certain parameters from this language ''' 
+        for consonant in self.get_matching_consonants(location=location, method=method, voicing=voicing):
+            self.valid_consonants.remove(consonant)
+
 
     def create_word(self, syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
