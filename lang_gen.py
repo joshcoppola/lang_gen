@@ -2,7 +2,7 @@
 from random import randint as roll
 import random
 
-from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS
+from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS, CONSONANT_METHODS, CONSONANT_LOCATIONS
 
 import orthography
 
@@ -39,44 +39,35 @@ class Language:
         #       -- Specific rules on an onset or coda level? (only voiced consonants in onset / coda, etc)
         # Prob of no onset / coda
 
-        consonant_methods = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
-        consonant_locations = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 'dental', 'glottal', 'palatal')
         voicings = (0, 1)
 
-        for i in xrange( roll(1, 2) ):
-            method = random.choice(consonant_methods)
+        for i in xrange( roll(0, 2) ):
+            method = random.choice(CONSONANT_METHODS)
             print 'Dropping all {0}s'.format(method)
             self.drop_consonants(method=method)
 
-        for i in xrange( roll(1, 2) ):
-            location = random.choice(consonant_locations)
+        for i in xrange( roll(0, 2) ):
+            location = random.choice(CONSONANT_LOCATIONS)
             print 'Dropping all {0}s'.format(location)
             self.drop_consonants(location=location)
 
         if roll(1, 5) == 1:
             voicings = random.choice(voicings)
             print 'Dropping with voicing of {0}'.format(voicings)
-            self.drop_consonants(voicings=voicings)
-
-        # Chance of no onset compared to other syllables
-        no_onset_multiplier = random.choice( (.1, .5, 1, 1, 2, 10) )
-
-        no_coda_multiplier =  random.choice( (.1, .25, .5, .5, 1, 2) )
-
-        print 'No onset mutiplier: {0}\nNo coda multiplier: {1}\n'.format(no_onset_multiplier, no_coda_multiplier)
-
-
-
-
-        # self.drop_consonants(method='fricative')
-        # self.drop_consonants(voicing=0)
+            self.drop_consonants(voicing=voicings)
 
         # Now, figure out probabilities for each of the onsets and codas
         # If this language contains all consonants in a possible onset or coda, add a random frequency at which the it occurs
-        self.generate_valid_onsets()
+        no_complex_onsets, onset_voicing_restriction = self.generate_valid_onsets()
+        no_complex_codas, coda_voicing_restriction = self.generate_valid_codas(no_complex_onsets=no_complex_onsets, onset_voicing_restriction=onset_voicing_restriction)
 
-        self.generate_valid_codas()
-    
+        print 'Complex onsets: {0}\nOnset voicing restriction: {1}'.format(not no_complex_onsets, onset_voicing_restriction)
+        print 'Complex codas:  {0}\nCoda voicing restriction: {1}'.format(not no_complex_codas,  coda_voicing_restriction)
+
+        # Chance of no onset compared to other syllables
+        no_onset_multiplier = random.choice( (.1, .5, 1, 1, 2, 10) )
+        no_coda_multiplier =  random.choice( (.1, .25, .5, .5, 1, 2) )
+        print 'No onset mutiplier: {0}\nNo coda multiplier: {1}\n'.format(no_onset_multiplier, no_coda_multiplier)
 
         # The placeholder "clusters" for empty onsets/codas
         self.onset_probabilities[EMPTY_CONSONANTS[0]] = int(sum(self.onset_probabilities.values()) * no_onset_multiplier)
@@ -99,23 +90,79 @@ class Language:
                 probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
                 self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
+        print 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.valid_vowels))
 
     def generate_valid_onsets(self):
-        # no_complex_onsets = 1 if roll(1, 10) == 10 else 0
+        ''' Contains some logic for choosing valid onsets for a language, by picking systematic features to disallow '''
+        no_complex_onsets = 1 if roll(1, 10) == 10 else 0
 
-        for o in ALL_ONSETS:
-            if all(onset_consonant in self.valid_consonants for onset_consonant in o.consonant_array):
-                # Reduce the probability of complex onsets
-                if   not o.is_complex():  self.onset_probabilities[o] = roll(75, 200)
-                elif not o.is_empty():    self.onset_probabilities[o] = roll(5, 15)
+        onset_voicing_restriction = roll(0, 1) if roll(1, 5) == 1 else None
+
+        consonants_matching_voicing_restriction = []
+        if onset_voicing_restriction is not None:
+            voicing_restriction_exclusion = roll(0, 1)
+            consonants_matching_voicing_restriction = self.get_matching_consonants(voicing=onset_voicing_restriction, exclude_matches=voicing_restriction_exclusion)
+
+        for onset in ALL_ONSETS:
+            # Can't allow the debug empty consonant, or onsets containing invalid consonants
+            if onset.is_empty() or not all(onset_consonant in self.valid_consonants for onset_consonant in onset.consonant_array):
+                continue
+
+            # No complex onsets if that flag has been set
+            elif no_complex_onsets and onset.is_complex():
+                continue
+
+            # If there is a voicing restriction, and the first consonant of the onset matches the restriction, discard the onset
+            elif onset_voicing_restriction is not None and onset.consonant_array[0] in consonants_matching_voicing_restriction:
+                continue
 
 
-    def generate_valid_codas(self):
-        for c in ALL_CODAS:
-            if all(coda_consonant in self.valid_consonants for coda_consonant in c.consonant_array):
-                # Reduce the probability of complex codas
-                if   not c.is_complex():  self.coda_probabilities[c] = roll(75, 200)
-                elif not c.is_empty():    self.coda_probabilities[c] = roll(5, 15)
+            # ------ Gauntlet has been run, this onset can now be added to the list ------ #
+            elif not onset.is_complex():
+                self.onset_probabilities[onset] = roll(75, 200)
+            # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
+            elif onset.is_complex():
+                self.onset_probabilities[onset] = roll(5, 15)
+            # ---------------------------------------------------------------------------- #
+
+        return no_complex_onsets, onset_voicing_restriction
+
+
+    def generate_valid_codas(self, no_complex_onsets, onset_voicing_restriction):
+        ''' Contains some logic for choosing valid codas for a language, by picking systematic features to disallow '''
+        no_complex_codas = 1 if (roll(1, 10) == 10 and not no_complex_onsets) else 0
+
+        coda_voicing_restriction = roll(0, 1) if (roll(1, 5) == 1 and onset_voicing_restriction is None) else None
+
+        consonants_matching_voicing_restriction = []
+        if coda_voicing_restriction is not None:
+            voicing_restriction_exclusion = roll(0, 1)
+            consonants_matching_voicing_restriction = self.get_matching_consonants(voicing=coda_voicing_restriction, exclude_matches=voicing_restriction_exclusion)
+
+        for coda in ALL_CODAS:
+            # Can't allow the debug empty consonant, or codas containing invalid consonants
+            if coda.is_empty() or not all(coda_consonant in self.valid_consonants for coda_consonant in coda.consonant_array):
+                continue
+
+            # No complex codas if that flag has been set
+            elif no_complex_codas and coda.is_complex():
+                continue
+
+            # If there is a voicing restriction, and the first consonant of the coda matches the restriction, discard the coda
+            elif coda_voicing_restriction is not None and coda.consonant_array[0] in consonants_matching_voicing_restriction:
+                continue
+
+
+            # ------ Gauntlet has been run, this coda can now be added to the list ------ #
+            elif not coda.is_complex():
+                self.coda_probabilities[coda] = roll(75, 200)
+            # Complex codas have a much smaller chance of appearing, partially because there's so many of them
+            elif coda.is_complex():
+                self.coda_probabilities[coda] = roll(5, 15)
+            # ---------------------------------------------------------------------------- #
+
+        return no_complex_codas, coda_voicing_restriction
+
 
 
     def get_matching_consonants(self, location='any', method='any', voicing='any', exclude_matches=0):
