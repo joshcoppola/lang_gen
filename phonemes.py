@@ -178,8 +178,11 @@ def find_consonants(location, method, voicing, exclude_list):
                 and (method == c.method or method == 'any') 
                 and (voicing == c.voicing or voicing == 'any') 
                 and c.num not in exclude_list # Sometimes there are exceptions to which consonants can match the input criteria
-                ] 
-        
+                ]
+
+
+CONSONANT_METHODS = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
+CONSONANT_LOCATIONS = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 'dental', 'glottal', 'palatal')
         
 # List of consonants and their properties
 CONSONANTS = [ 
