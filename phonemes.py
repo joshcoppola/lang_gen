@@ -95,7 +95,7 @@ class PClusterGenerator:
     clusters which match the rules '''
     def __init__(self, cluster_loc, *phoneme_properties):
         self.cluster_loc = cluster_loc
-        self.phoneme_properties = phoneme_properties[1:]
+        self.phoneme_properties = phoneme_properties
 
         rule_descriptions = [rule.describe_rule() for rule in self.phoneme_properties]
         self.rule_set = ' followed by '.join(rule_descriptions)
