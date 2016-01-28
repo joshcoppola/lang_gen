@@ -1,6 +1,7 @@
 
 from random import randint as roll
 import random
+import itertools
 
 from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS, CONSONANT_METHODS, CONSONANT_LOCATIONS
 
@@ -179,14 +180,13 @@ class Language:
 
 
     def describe_syllable_level_rules(self, syllable_part, no_complex, voicing_restriction, voicing_restriction_exclusion):
-        ''' Placeholder function to describe syllable-level phonemic restrictions ''' 
-        
-        print 'DEBUG: voicing_restriction = {0}, voicing_restriction_exclusion = {1}'.format(voicing_restriction, voicing_restriction_exclusion)
+        ''' Placeholder function to describe syllable-level phonemic restrictions '''
 
         complexity_description = 'cannot be complex' if no_complex else 'can be simple or complex'
 
         if voicing_restriction is None:
-            voicing_description = 'have no voicing restrictions'    
+            voicing_description = 'have no voicing restrictions'
+
         else:
             voicing = 'voiced' if voicing_restriction == 1 else 'unvoiced'
 
@@ -235,10 +235,8 @@ class Language:
             word.extend([c.num for c in onset.consonant_array])
             word.append(vowel.num)
             word.extend([c.num for c in coda.consonant_array])
-            # word += '{0}{1}{2}'.format(onset.get_string(), vowel.get_string(), coda.get_string())
 
         self.orthography.phon_to_orth(phoneme_sequence=word)
-        # print ''.join([orthography.PHONEMES_WRITTEN[phoneme] for phoneme in word])
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
@@ -354,29 +352,19 @@ class Language:
     def info_dump(self):
         table_data = []
 
-        print '\n-- Onsets --'
-        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)    
-        
-        table_data.append(['{0} {1}'.format(perc, c.get_string()) for perc, c in onset_probabilities])
-        # for perc, c in onset_probabilities:
-        #     print perc, c.get_string()
+        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)
+        table_data.append(['{0: >4} {1}'.format(perc, c.get_string()) for perc, c in onset_probabilities])
 
-        print '\n-- Codas --'
-        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) for cons in self.coda_probabilities.keys()), reverse=True)    
-        
-        table_data.append(['{0} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities])
-        # for perc, c in coda_probabilities:
-        #     print perc, c.get_string()
+        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) for cons in self.coda_probabilities.keys()), reverse=True)
+        table_data.append(['{0: >4} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities])
 
-        print '\n-- Vowels --'
-        vowel_probabilities = sorted(((self.vowel_flat_probabilities[v], v) for v in self.vowel_flat_probabilities.keys()), reverse=True)    
-        
-        table_data.append(['{0} {1}'.format(perc, v.get_string()) for perc, v in vowel_probabilities])
-        # for perc, v in vowel_probabilities:
-        #     print perc, v.get_string()
-        
-        for row in table_data:
-            print("{: >20} {: >20} {: >20}".format(*row))
+        vowel_probabilities = sorted(((self.vowel_flat_probabilities[v], v) for v in self.vowel_flat_probabilities.keys()), reverse=True)
+        table_data.append(['{0: >4} {1}'.format(perc, v.get_string()) for perc, v in vowel_probabilities])
+
+
+        print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Vowels'))
+        for row in itertools.izip_longest(*table_data, fillvalue=""):
+            print("{: <12} {: <12} {: <12}".format(*row))
 
         print ''
 
