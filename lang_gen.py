@@ -105,6 +105,7 @@ class Language:
         self.generate_valid_codas()
 
 
+        vowels_to_remove = []
         # Set vowel probabilities, can vary on preceding and following cluster
         for v in self.valid_vowels:
             # # Vowel probabilities are dicts of cluster: probability values,
@@ -123,9 +124,14 @@ class Language:
             #     # probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
             #     probabity = int(random.lognormvariate(3, 1.2))
             #     self.vowel_probabilities_by_following_cluster[v][coda] = probability
-
             if chance(KEEP_VOWEL_CHANCE):
                 self.vowel_flat_probabilities[v] = int(random.lognormvariate(3, 1.2))
+            else:
+                vowels_to_remove.append(v)
+
+        # Avoid modifying self.valid_vowels while iterating over it :)
+        for vowel in vowels_to_remove:
+            self.valid_vowels.remove(vowel)
 
         ## ------------------------- Print out some info ---------------------------- ##
 
