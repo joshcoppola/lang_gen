@@ -15,6 +15,23 @@ This file generates languages which have distinct phonemes.
 '''
 
 
+LANGUAGE_DROP_VOICING_CHANCE = 5
+
+DROP_COMPLEX_ONSETS_CHANCE = 10
+DROP_COMPLEX_CODAS_CHANCE = 10
+
+NO_ONSET_MULTIPLIERS = (.1, .5, 1, 1, 2, 5)
+NO_CODA_MULTIPLIERS  = (.1, .25, .5, .5, 1, 2)
+
+ONSET_RESTRICT_VOICING_CHANCE = 20
+CODA_RESTRICT_VOICING_CHANCE  = 20
+
+KEEP_VOWEL_CHANCE = 80
+
+
+def chance(number):
+    return roll(1, 100) <= number
+
 class Language:
     def __init__(self):
         self.onset_probabilities = {}
@@ -46,7 +63,7 @@ class Language:
             print 'Dropping all {0}s'.format(location)
             self.drop_consonants(location=location)
 
-        if roll(1, 25) == 1:
+        if chance(LANGUAGE_DROP_VOICING_CHANCE):
             voicings = random.choice((0, 1))
             self.properties['language_voicing_restriction'] = voicings
             print 'Dropping with voicing of {0}'.format(voicings)
@@ -55,15 +72,16 @@ class Language:
             self.properties['language_voicing_restriction'] = None
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
-        self.properties['no_complex_onsets'] = 1 if roll(1, 10) == 10 else 0
-        self.properties['no_complex_codas'] = 1 if (roll(1, 10) == 10 and not self.properties['no_complex_onsets']) else 0
+        self.properties['no_complex_onsets'] = 1 if chance(DROP_COMPLEX_ONSETS_CHANCE) else 0
+        self.properties['no_complex_codas']  = 1 if chance(DROP_COMPLEX_CODAS_CHANCE) and \
+                                                    not self.properties['no_complex_onsets'] else 0
         # Chance of no onset / coda compared to other clusters (a multiplier of 1 means that this onset has a 50% chance
         #  of occuring relative to <any> other onset!
-        self.properties['no_onset_multiplier'] = random.choice( (.1, .5, 1, 1, 2, 5) )
-        self.properties['no_coda_multiplier'] =  random.choice( (.1, .25, .5, .5, 1, 2) )
+        self.properties['no_onset_multiplier'] = random.choice(NO_ONSET_MULTIPLIERS)
+        self.properties['no_coda_multiplier'] =  random.choice(NO_CODA_MULTIPLIERS)
 
         # ---------- Does the onset have a restriction in voicing? ---------- #
-        if roll(1, 5) == 1 and self.properties['language_voicing_restriction'] is None:
+        if chance(ONSET_RESTRICT_VOICING_CHANCE) and self.properties['language_voicing_restriction'] is None:
             self.properties['onset_voicing_restriction']        = roll(0, 1)
             self.properties['invert_onset_voicing_restriction'] = roll(0, 1)
         else:
@@ -72,8 +90,8 @@ class Language:
         # ------------------------------------------------------------------- #
 
         # ---------- Does the coda have a restriction in voicing? ----------- #
-        if roll(1, 5) == 1 and not self.properties['onset_voicing_restriction'] \
-                           and self.properties['language_voicing_restriction'] is None:
+        if chance(CODA_RESTRICT_VOICING_CHANCE) and not self.properties['onset_voicing_restriction'] \
+                                                and self.properties['language_voicing_restriction'] is None:
             self.properties['coda_voicing_restriction']        = roll(0, 1)
             self.properties['invert_coda_voicing_restriction'] = roll(0, 1)
         else:
@@ -106,7 +124,7 @@ class Language:
             #     probabity = int(random.lognormvariate(3, 1.2))
             #     self.vowel_probabilities_by_following_cluster[v][coda] = probability
 
-            if roll(1, 10) >= 3:
+            if chance(KEEP_VOWEL_CHANCE):
                 self.vowel_flat_probabilities[v] = int(random.lognormvariate(3, 1.2))
 
         ## ------------------------- Print out some info ---------------------------- ##
