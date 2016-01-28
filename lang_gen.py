@@ -1,16 +1,17 @@
 
-from random import randint as roll
+
 import random
+from random import randint as roll
+
 import itertools
 
-from phonemes import CONSONANTS, VOWELS, POSSIBLE_ONSETS, POSSIBLE_CODAS, EMPTY_CONSONANTS, CONSONANT_METHODS, CONSONANT_LOCATIONS
-
+import phonemes as p
 import orthography
 
+# random.seed(100)
 
 ''' 
-This file generates languages (and eventually orthographies) which have distinct
-phonemes and orthographies.
+This file generates languages which have distinct phonemes.
 '''
 
 
@@ -18,48 +19,51 @@ class Language:
     def __init__(self):
         self.onset_probabilities = {}
         self.coda_probabilities = {}
-        self.vowel_probabilities_by_preceding_cluster = {}
-        self.vowel_probabilities_by_following_cluster = {}
-
+        # self.vowel_probabilities_by_preceding_cluster = {}
+        # self.vowel_probabilities_by_following_cluster = {}
         self.vowel_flat_probabilities = {}
 
         self.vocabulary = {}
         self.orthography = orthography.Orthography()
 
-        self.valid_vowels = set(VOWELS)
-        self.valid_consonants = set([c for c in CONSONANTS if c.num < 300])
+        self.valid_vowels = set(p.VOWELS)
+        self.valid_consonants = set([c for c in p.CONSONANTS if c.num < 300])
 
         self.properties = {}
+
 
     def generate_language_properties(self):
         ''' Determine the phonemes which are valid in this language and the 
             frequency at which they occur '''
 
         for i in xrange( roll(0, 2) ):
-            method = random.choice(CONSONANT_METHODS)
+            method = random.choice(p.CONSONANT_METHODS)
             print 'Dropping all {0}s'.format(method)
             self.drop_consonants(method=method)
 
         for i in xrange( roll(0, 2) ):
-            location = random.choice(CONSONANT_LOCATIONS)
+            location = random.choice(p.CONSONANT_LOCATIONS)
             print 'Dropping all {0}s'.format(location)
             self.drop_consonants(location=location)
 
-        # if roll(1, 5) == 1:
-        #     voicings = random.choice((0, 1))
-        #     print 'Dropping with voicing of {0}'.format(voicings)
-        #     self.drop_consonants(voicing=voicings)
+        if roll(1, 25) == 1:
+            voicings = random.choice((0, 1))
+            self.properties['language_voicing_restriction'] = voicings
+            print 'Dropping with voicing of {0}'.format(voicings)
+            self.drop_consonants(voicing=voicings)
+        else:
+            self.properties['language_voicing_restriction'] = None
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
         self.properties['no_complex_onsets'] = 1 if roll(1, 10) == 10 else 0
         self.properties['no_complex_codas'] = 1 if (roll(1, 10) == 10 and not self.properties['no_complex_onsets']) else 0
         # Chance of no onset / coda compared to other clusters (a multiplier of 1 means that this onset has a 50% chance
         #  of occuring relative to <any> other onset!
-        self.properties['no_onset_multiplier'] = random.choice( (.1, .5, 1, 1, 2, 10) )
+        self.properties['no_onset_multiplier'] = random.choice( (.1, .5, 1, 1, 2, 5) )
         self.properties['no_coda_multiplier'] =  random.choice( (.1, .25, .5, .5, 1, 2) )
 
         # ---------- Does the onset have a restriction in voicing? ---------- #
-        if roll(1, 5) == 1:
+        if roll(1, 5) == 1 and self.properties['language_voicing_restriction'] is None:
             self.properties['onset_voicing_restriction']        = roll(0, 1)
             self.properties['invert_onset_voicing_restriction'] = roll(0, 1)
         else:
@@ -68,7 +72,8 @@ class Language:
         # ------------------------------------------------------------------- #
 
         # ---------- Does the coda have a restriction in voicing? ----------- #
-        if roll(1, 5) == 1:
+        if roll(1, 5) == 1 and not self.properties['onset_voicing_restriction'] \
+                           and self.properties['language_voicing_restriction'] is None:
             self.properties['coda_voicing_restriction']        = roll(0, 1)
             self.properties['invert_coda_voicing_restriction'] = roll(0, 1)
         else:
@@ -125,7 +130,7 @@ class Language:
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['onset_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_onset_voicing_restriction'])
 
-        for onset in ALL_ONSETS:
+        for onset in p.ALL_ONSETS:
             # Can't allow the debug empty consonant, or onsets containing invalid consonants
             if onset.is_empty() or not all(onset_consonant in self.valid_consonants for onset_consonant in onset.consonant_array):
                 continue
@@ -147,14 +152,15 @@ class Language:
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
-        self.onset_probabilities[EMPTY_CONSONANTS[0]] = probability_of_no_onset
+        self.onset_probabilities[p.EMPTY_CONSONANTS[0]] = probability_of_no_onset
+
 
     def generate_valid_codas(self):
         ''' Contains some logic for choosing valid codas for a language, by picking systematic features to disallow '''
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['coda_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_coda_voicing_restriction'])
 
-        for coda in ALL_CODAS:
+        for coda in p.ALL_CODAS:
             # Can't allow the debug empty consonant, or codas containing invalid consonants
             if coda.is_empty() or not all(coda_consonant in self.valid_consonants for coda_consonant in coda.consonant_array):
                 continue
@@ -176,7 +182,8 @@ class Language:
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
-        self.coda_probabilities[EMPTY_CONSONANTS[1]] = probability_of_no_coda
+        self.coda_probabilities[p.EMPTY_CONSONANTS[1]] = probability_of_no_coda
+
 
     def describe_syllable_level_rules(self, syllable_part, no_complex, voicing_restriction, voicing_restriction_exclusion):
         ''' Placeholder function to describe syllable-level phonemic restrictions '''
@@ -200,9 +207,7 @@ class Language:
         matches = [c for c in self.valid_consonants 
                     if  (location == c.location or location == 'any') 
                     and (method   == c.method   or method   == 'any') 
-                    and (voicing  == c.voicing  or voicing  == 'any') 
-                    ]
-
+                    and (voicing  == c.voicing  or voicing  == 'any') ]
         # exclude_matches as basically "not" - if that option is toggled on, build a new list of all 
         # results which didn't match the query. 
         if not exclude_matches: query_result = matches  
@@ -246,10 +251,10 @@ class Language:
             return weighted_random(self.onset_probabilities)
         # Otherwise, if the previous coda was complex, we'll assign an empty onset
         elif previous_coda.is_complex():
-            return EMPTY_CONSONANTS[0]
+            return p.EMPTY_CONSONANTS[0]
         # No onsets for syllables in the middle of the word if the previous syllable has a coda
         elif syllable_position == 1 and not previous_coda.is_empty():
-            return EMPTY_CONSONANTS[0]
+            return p.EMPTY_CONSONANTS[0]
 
         # Otherwise, generate an onset with some restrictions
         # Stash the previous coda's last phoneme in case we need to check it multiple times
@@ -268,12 +273,13 @@ class Language:
             # If the onset has made it through the gauntlet, return it
             return onset
 
+
     def choose_valid_coda(self, onset, syllable_position):
         ''' Business logic for determining whether a coda is valid, given the syllable onset and other constraints '''
 
         # No onsets for syllables in the middle of the word if the previous syllable has a coda
         if syllable_position == 1:
-            return EMPTY_CONSONANTS[1]
+            return p.EMPTY_CONSONANTS[1]
 
         # Loop through until a valid coda is generated
         while True:
@@ -288,7 +294,6 @@ class Language:
 
     def choose_valid_vowel(self, onset, coda, syllable_position):
         ''' Choose a valid vowel given an onset, coda, and syllable position '''
-
         # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
         # vowel_probabilities = {v: self.vowel_probabilities_by_preceding_cluster[v][onset] + 
         #                           self.vowel_probabilities_by_following_cluster[v][coda] for v in self.valid_vowels}                         
@@ -301,7 +306,6 @@ class Language:
             # A short vowel cannot occur if there is no consonant in the coda
             if coda.is_empty() and vowel.length == 'short':
                 continue
-
             # Only short vowels can occur before /ng/
             if coda.consonant_number_array[0] == 220 and vowel.length != 'short':
                 continue
@@ -309,9 +313,7 @@ class Language:
             # If the vowel has made it through the gauntlet, break out of the loop and return it
             break
 
-
         return vowel
-
 
 
     def get_syllable_position(self, current_syllable, total_syllables):
@@ -321,19 +323,15 @@ class Language:
             1   = middle
             2   = final
         '''
-
         # Only 1 syllable in the word
-        if total_syllables == 1:
-            return -1
+        if total_syllables == 1:    return -1
         # On the first syllable
-        if current_syllable == 0:
-            return 0
+        if current_syllable == 0:   return 0
         # On the last syllable
-        elif current_syllable == total_syllables - 1:
-            return 2
+        elif current_syllable == \
+             total_syllables - 1:   return 2
         # Otherwise, it's in the middle
-        else:
-            return 1
+        else:                       return 1
 
 
     def info_dump(self):
@@ -355,13 +353,12 @@ class Language:
 
         print ''
 
+
 def weighted_random(choices):
-    ''' Naive algorithm. Input a hash of possibility+>weight, 
+    ''' Naive algorithm. Input a dict of possibility: weight, 
     where weight must be an integer for this to function 100% 
     correctly. Returns the choice '''
-    total = 0
-    for key, weight in choices.iteritems():
-        total += weight
+    total = sum(choices.values())
 
     choice_number = roll(1, total)
     running_total = 0
@@ -375,35 +372,17 @@ def weighted_random(choices):
             return key
 
 
-def generate_pclusters():
-    ''' Take the definitions of pclusters and create all permutations '''
-    global ALL_ONSETS, ALL_CODAS
-
-    ALL_ONSETS = []
-    for i in POSSIBLE_ONSETS:
-        onsets = i.generate()
-        for o in onsets:
-            ALL_ONSETS.append(o)
-            # print o.get_string(), o.rule_set
-
-    ALL_CODAS = []
-    for i in POSSIBLE_CODAS: 
-        codas = i.generate()
-        for c in codas:
-            ALL_CODAS.append(c)
-            # print c.get_string(), c.rule_set
-
 if __name__ == '__main__':
     print ''
-    generate_pclusters()
 
     t = Language()
     t.generate_language_properties()
 
     t.info_dump()
     
+    # print ' ---->', roll(1, 100), '<----'
     for i in xrange(20):
-        t.create_word(syllables=roll(1, 3))
-
+        t.create_word(syllables=random.choice( (1, 1, 1, 1, 2, 2, 3) ))
+    # print ' ---->', roll(1, 100), '<----'
     print ''
 
