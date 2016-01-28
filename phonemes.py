@@ -1,7 +1,7 @@
 # coding=Latin-1
 
 import itertools
-from collections import Counter, namedtuple
+from collections import Counter
 
 ''' 
 This file deals with language building blocks (phonemes) and clusters of phonemes.
@@ -118,7 +118,6 @@ class PClusterGenerator:
 
         return all_permutations_worked        
         
-#Rule = namedtuple('GeneratorRule', 'location, method, voicing, exceptions')
 
 class Rule:
     def __init__(self, location, method, voicing, exceptions):
@@ -180,9 +179,6 @@ def find_consonants(location, method, voicing, exclude_list):
                 and c.num not in exclude_list # Sometimes there are exceptions to which consonants can match the input criteria
                 ]
 
-
-CONSONANT_METHODS = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
-CONSONANT_LOCATIONS = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 'dental', 'glottal', 'palatal')
         
 # List of consonants and their properties
 CONSONANTS = [ 
@@ -449,5 +445,13 @@ EMPTY_CONSONANTS = [
     PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda')
     ]
 
+
+
+ALL_ONSETS = [onset for onset_rules in POSSIBLE_ONSETS for onset in onset_rules.generate()]
+ALL_CODAS = [coda for coda_rules in POSSIBLE_CODAS for coda in coda_rules.generate()]
+
+CONSONANT_METHODS = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
+CONSONANT_LOCATIONS = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 
+                        'dental', 'glottal', 'palatal')
 
 
