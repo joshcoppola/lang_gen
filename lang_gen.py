@@ -128,7 +128,7 @@ class Language:
                 self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
             elif onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(20, 35)
+                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 2) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         self.describe_syllable_level_rules(syllable_part='onset', no_complex=no_complex_onsets, 
@@ -169,7 +169,7 @@ class Language:
                 self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex codas have a much smaller chance of appearing, partially because there's so many of them
             elif coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(20, 35)
+                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 2) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         self.describe_syllable_level_rules(syllable_part='coda', no_complex=no_complex_codas, 
@@ -244,59 +244,47 @@ class Language:
 
         # At the beginning of the word, any onset is valid
         if previous_coda is None:
-            onset = weighted_random(self.onset_probabilities)
-
+            return weighted_random(self.onset_probabilities)
         # Otherwise, if the previous coda was complex, we'll assign an empty onset
         elif previous_coda.is_complex():
-            onset = EMPTY_CONSONANTS[0]
-
+            return EMPTY_CONSONANTS[0]
         # No onsets for syllables in the middle of the word if the previous syllable has a coda
         elif syllable_position == 1 and not previous_coda.is_empty():
-            onset = EMPTY_CONSONANTS[0]
+            return EMPTY_CONSONANTS[0]
 
         # Otherwise, generate an onset with some restrictions
-        else:
-            # Stash the previous coda's last phoneme in case we need to check it multiple times
-            previous_coda_last_phoneme = previous_coda.consonant_number_array[-1]
+        # Stash the previous coda's last phoneme in case we need to check it multiple times
+        previous_coda_last_phoneme = previous_coda.consonant_number_array[-1]
 
-            # Loop through and generate onsets until one matches all criteria
-            while True:
-                onset = weighted_random(self.onset_probabilities)
+        # Loop through and generate onsets until one matches all criteria
+        while True:
+            onset = weighted_random(self.onset_probabilities)
+            # Can't start one syllable off with the same phoneme that the previous ended with
+            if onset.consonant_number_array[-1] == previous_coda_last_phoneme:
+                continue
+            # Can't have an open coda followed by an empty onset
+            if onset.is_empty() and previous_coda.is_empty():
+                continue
 
-                # Can't start one syllable off with the same phoneme that the previous ended with
-                if onset.consonant_number_array[-1] == previous_coda_last_phoneme:
-                    continue
-
-                # Can't have an open coda followed by an empty onset
-                if onset.is_empty() and previous_coda.is_empty():
-                    continue
-
-                break
-
-        return onset
+            # If the onset has made it through the gauntlet, return it
+            return onset
 
     def choose_valid_coda(self, onset, syllable_position):
         ''' Business logic for determining whether a coda is valid, given the syllable onset and other constraints '''
 
         # No onsets for syllables in the middle of the word if the previous syllable has a coda
         if syllable_position == 1:
-            coda = EMPTY_CONSONANTS[1]
+            return EMPTY_CONSONANTS[1]
 
-        else:
-            # No /l/ or /r/ in codas when the onset contains one of these 
-            restrict_rl = onset.has_any_phoneme( (221, 224) )
+        # Loop through until a valid coda is generated
+        while True:
+            coda = weighted_random(self.coda_probabilities)
+            # No /l/ or /r/ in codas when the onset contains one of these
+            if onset.has_any_phoneme( (221, 224) ) and coda.has_any_phoneme( (221, 224) ):
+                continue
 
-            while True:
-                coda = weighted_random(self.coda_probabilities)
-
-                # No /l/ or /r/ in codas when the onset contains one of these 
-                if restrict_rl and coda.has_any_phoneme( (221, 224)):
-                    continue
-
-                # If the coda has made it through the gauntlet, break out of the loop and return it
-                break
-
-        return coda
+            # If the coda has made it through the gauntlet, break out of the loop and return it
+            return coda
 
 
     def choose_valid_vowel(self, onset, coda, syllable_position):
