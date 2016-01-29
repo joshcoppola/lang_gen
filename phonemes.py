@@ -18,28 +18,30 @@ class Consonant:
     information about location, method, and voicing, as well as a 
     unique number, and an english letter that can correspond to the
     consonant. '''
-    def __init__(self, char, num, location, method, voicing, description):
+    def __init__(self, id_, char, location, method, voicing, description):
+        self.id_ = id_
         self.char = char
-        self.num = num
         self.location = location
         self.method = method
         self.voicing = voicing
         self.description = description
 
     def info(self):
-        print 'Consonant {0} {1} {2} {3}'.format(self.num, self.location, self.method, self.voicing)
+        print 'Consonant {0} {1} {2} {3}'.format(self.id_, self.location, self.method, self.voicing)
 
 class Vowel:
-    def __init__(self, char, num, position, length, description):
+    def __init__(self, id_, char, position, manner, lips, description):
+        self.id_ = id_
         self.char = char
-        self.num = num
         # Tuple of tuples. Each sub-tuple is an xy pair of tongue position / tongue height
         # There is one xy pair for each "sound" in the vowel, so monphthongs have one sub-tuple
         # and diphthongs have two sub-tuples
         self.position = position
 
-        # Short, long, or diphthong
-        self.length = length
+        # Lax or tense
+        self.manner = manner
+        # Are lips rounded or unrounded?
+        self.lips = lips
 
         self.description = description
 
@@ -47,7 +49,7 @@ class Vowel:
         return len(self.position) > 1
 
     def info(self):
-        print 'Vowel {0} {1}'.format(self.num, self.char)
+        print 'Vowel {0} {1}'.format(self.id_, self.char)
 
     def get_string(self):
         return self.char
@@ -63,22 +65,22 @@ class PCluster:
         # Contains the raw consonants
         self.consonant_array = consonant_array
         # Contains the unique numbers for the consonants
-        self.consonant_number_array = [c.num for c in self.consonant_array]
+        self.consonant_id_array = [c.id_ for c in self.consonant_array]
 
         self.rule_set = rule_set
 
     def is_empty(self):
         ''' Use to see if this cluster is simply a empty phoneme placeholder '''
-        return self.consonant_array[0].num >= 300
+        return self.consonant_array[0].id_ >= 300
 
     def is_complex(self):
         return len(self.consonant_array) > 1
 
-    def has_all_phonemes(self, phoneme_nums):
-        return all(phoneme_num in self.consonant_number_array for phoneme_num in phoneme_nums)
+    def has_all_phonemes(self, phoneme_ids):
+        return all(phoneme_id in self.consonant_id_array for phoneme_id in phoneme_ids)
 
-    def has_any_phoneme(self, phoneme_nums):
-        return any(phoneme_num in self.consonant_number_array for phoneme_num in phoneme_nums)
+    def has_any_phoneme(self, phoneme_ids):
+        return any(phoneme_id in self.consonant_id_array for phoneme_id in phoneme_ids)
 
     def get_string(self):
         cstr = ''
@@ -133,7 +135,7 @@ class Rule:
         voicing_description = VOICING_DESCRIPTIONS[self.voicing]
 
         # Some (inefficient) list comprehension magic to get a list of the consonants which are called out as exceptions in this rule
-        exception_list = ['/{0}/'.format(c.char) for consonant_num in self.exceptions for c in CONSONANTS if c.num == consonant_num]
+        exception_list = ['/{0}/'.format(c.char) for consonant_id in self.exceptions for c in CONSONANTS if c.id_ == consonant_id]
         # Turn the exception list into a string which can be tacked on at the end of the rule description
         # TODO - Use join_list() once integrated back into the project
         exceptions = '' if not len(self.exceptions) else ' (with the exception of {0})'.format(', '.join(exception_list))
@@ -176,45 +178,41 @@ def find_consonants(location, method, voicing, exclude_list):
                 if  (location == c.location or location == 'any') 
                 and (method == c.method or method == 'any') 
                 and (voicing == c.voicing or voicing == 'any') 
-                and c.num not in exclude_list # Sometimes there are exceptions to which consonants can match the input criteria
+                and c.id_ not in exclude_list # Sometimes there are exceptions to which consonants can match the input criteria
                 ]
 
         
 # List of consonants and their properties
 CONSONANTS = [ 
-    Consonant('p',  201, 'bilabial',     'plosive',     0, '"p"'),
-    Consonant('b',  202, 'bilabial',     'plosive',     1, '"b"'),
-    Consonant('t',  203, 'alveolar',     'plosive',     0, '"t"'),
-    Consonant('d',  204, 'alveolar',     'plosive',     1, '"d"'),
-    Consonant('k',  205, 'velar',        'plosive',     0, '"k"'),
-    Consonant('g',  206, 'velar',        'plosive',     1, 'hard "g", as in "girl"'),
-    Consonant('ch', 207, 'post-alveolar','affricate',   0, '"ch", as in "chest"'),
-    Consonant('j',  208, 'post-alveolar','affricate',   1, '"j", as in "join"'),
-    Consonant('f',  209, 'labio-dental', 'fricative',   0, '"f"'),
-    Consonant('v',  210, 'labio-dental', 'fricative',   1, '"v"'),
-    Consonant('th', 211, 'dental',       'fricative',   0, 'soft "th", as in "thin"'),
-    Consonant('th', 212, 'dental',       'fricative',   1, 'hard "th", as in "that"'),
-    Consonant('s',  213, 'alveolar',     'fricative',   0, '"s"'),
-    Consonant('z',  214, 'alveolar',     'fricative',   1, '"z"'),
-    Consonant('sh', 215, 'post-alveolar','fricative',   0, '"sh", as in "shore"'),
-    # Consonant('zh', 216, 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
-    Consonant('h',  217, 'glottal',      'fricative',   3, '"h"'),
-    Consonant('m',  218, 'bilabial',     'nasal',       3, '"m"'),
-    Consonant('n',  219, 'alveolar',     'nasal',       3, '"n"'),
-    Consonant('ng', 220, 'velar',        'nasal',       3, '"ng", as in "thing"'),
-    Consonant('r',  221, 'alveolar',     'approximant', 3, '"r"'), # R - should be also post-alveolar?
-    Consonant('y',  222, 'palatal',      'approximant', 3, '"y" consonant, as in "yes"'), # J - really Y
-    Consonant('w',  223, 'velar',        'approximant', 3, '"w"'),
-    Consonant('l',  224, 'alveolar',     'lateral',     3, '"l"'), 
+    Consonant(201, 'p',  'bilabial',     'plosive',     0, '"p"'),
+    Consonant(202, 'b',  'bilabial',     'plosive',     1, '"b"'),
+    Consonant(203, 't',  'alveolar',     'plosive',     0, '"t"'),
+    Consonant(204, 'd',  'alveolar',     'plosive',     1, '"d"'),
+    Consonant(205, 'k',  'velar',        'plosive',     0, '"k"'),
+    Consonant(206, 'g',  'velar',        'plosive',     1, 'hard "g", as in "girl"'),
+    Consonant(207, 'ch', 'post-alveolar','affricate',   0, '"ch", as in "chest"'),
+    Consonant(208, 'j',  'post-alveolar','affricate',   1, '"j", as in "join"'),
+    Consonant(209, 'f',  'labio-dental', 'fricative',   0, '"f"'),
+    Consonant(210, 'v',  'labio-dental', 'fricative',   1, '"v"'),
+    Consonant(211, 'th', 'dental',       'fricative',   0, 'soft "th", as in "thin"'),
+    Consonant(212, 'th', 'dental',       'fricative',   1, 'hard "th", as in "that"'),
+    Consonant(213, 's',  'alveolar',     'fricative',   0, '"s"'),
+    Consonant(214, 'z',  'alveolar',     'fricative',   1, '"z"'),
+    Consonant(215, 'sh', 'post-alveolar','fricative',   0, '"sh", as in "shore"'),
+    # Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
+    Consonant(217, 'h',  'glottal',      'fricative',   3, '"h"'),
+    Consonant(218, 'm',  'bilabial',     'nasal',       3, '"m"'),
+    Consonant(219, 'n',  'alveolar',     'nasal',       3, '"n"'),
+    Consonant(220, 'ng', 'velar',        'nasal',       3, '"ng", as in "thing"'),
+    Consonant(221, 'r',  'alveolar',     'approximant', 3, '"r"'), # R - should be also post-alveolar?
+    Consonant(222, 'y',  'palatal',      'approximant', 3, '"y" consonant, as in "yes"'), # J - really Y
+    Consonant(223, 'w',  'velar',        'approximant', 3, '"w"'),
+    Consonant(224, 'l',  'alveolar',     'lateral',     3, '"l"'),
 
     # Empty word-initial onset
-    Consonant('',   300, 'onset',        'word-initial',       3, ''),
+    Consonant(300, '', 'onset',          'word-initial', 3, ''),
     # Empty word-final coda
-    Consonant('',   301, 'coda',         'word-final',       3, ''),
-    # Empty mid-word onset
-    Consonant('',   302, 'onset',        'mid-word-initial',       3, ''),
-    # Empty mid-word coda
-    Consonant('',   303, 'coda',         'mid-word-final',       3, '') 
+    Consonant(301, '',  'coda',          'word-final',   3, ''),
     ]
 
 
@@ -235,26 +233,26 @@ CONSONANTS = [
 VOWELS = [
 
     # -- Monophthongs -- #
-    Vowel(char='i',  num=101, position=( (0, 7), ),  length='short', description='short "i", as in "sit"'),     # /ɪ/
-    Vowel(char='e',  num=102, position=( (0, 9), ),  length='long' , description='long "e", as in "see"'),      # /i(ː)/
-    Vowel(char='u',  num=103, position=( (5, 2), ),  length='short', description='short "u", as in "up"'),      # /ʌ/
-    Vowel(char='e',  num=114, position=( (0, 5), ),  length='short', description='short "e", as in "beg"'),     # /ɛ/
-    Vowel(char='a',  num=105, position=( (0, 2), ),  length='short', description='short "a", as in "bad"'),     # /æ/
-    Vowel(char='aa', num=107, position=( (9, 1), ),  length='long' , description='flat "a", as in "ah"'),       # /ɑ/
-    Vowel(char='oo', num=110, position=( (9, 7), ),  length='short', description='short "i", as in "put"'),     # /ʊ/
-    Vowel(char='ue', num=111, position=( (9, 9), ),  length='long' , description='long "u", as in "blue"'),     # /uː/
-    Vowel(char='au', num=112, position=( (9, 3), ),  length='long' , description='"aw", as in "saw"'),          # /ɔ/
+    Vowel(id_=101, char='i',  position=( (0, 7), ),  manner='lax',   lips='unrounded', description='short "i", as in "sit"'),     # /ɪ/
+    Vowel(id_=102, char='e',  position=( (0, 9), ),  manner='tense', lips='unrounded', description='long "e", as in "see"'),      # /i(ː)/
+    Vowel(id_=103, char='u',  position=( (5, 2), ),  manner='lax',   lips='unrounded', description='short "u", as in "up"'),      # /ʌ/
+    Vowel(id_=114, char='e',  position=( (0, 5), ),  manner='lax',   lips='unrounded', description='short "e", as in "beg"'),     # /ɛ/
+    Vowel(id_=105, char='a',  position=( (0, 2), ),  manner='lax',   lips='unrounded', description='short "a", as in "bad"'),     # /æ/
+    Vowel(id_=107, char='aa', position=( (9, 1), ),  manner='tense', lips='unrounded', description='flat "a", as in "ah"'),       # /ɑ/
+    Vowel(id_=110, char='oo', position=( (9, 7), ),  manner='lax',   lips='rounded',   description='short "u", as in "put"'),     # /ʊ/
+    Vowel(id_=111, char='ue', position=( (9, 9), ),  manner='tense', lips='rounded',   description='long "u", as in "blue"'),     # /uː/
+    Vowel(id_=112, char='au', position=( (9, 3), ),  manner='tense', lips='rounded',   description='"aw", as in "saw"'),          # /ɔ/
 
     # -- Diphthongs -- #
-    Vowel(char='ae', num=106, position=( (0, 5), (3, 7) ),  length='diphthong', description='long "a", as in "gate"'),  # eɪ
-    Vowel(char='ie', num=108, position=( (3, 0), (4, 7) ),  length='diphthong', description='long "i", as in "hide"'),  # äɪ
-    Vowel(char='o',  num=109, position=( (8, 5), (9, 7) ),  length='diphthong', description='long "o", as in "toe"'),   # oʊ
-    Vowel(char='ou', num=113, position=( (5, 0), (5, 6) ),  length='diphthong', description='"ou", as in "out"'),       # aʊ
-    Vowel(char='oi', num=114, position=( (9, 4), (5, 7) ),  length='diphthong', description='"oi", as in "toil"')       # ɔɪ
+    Vowel(id_=106, char='ae', position=( (0, 5), (3, 7) ),  manner='tense', lips='unrounded', description='long "a", as in "gate"'),  # eɪ
+    Vowel(id_=108, char='ie', position=( (3, 0), (4, 7) ),  manner='tense', lips='unrounded', description='long "i", as in "hide"'),  # äɪ
+    Vowel(id_=109, char='o',  position=( (8, 5), (9, 7) ),  manner='tense', lips='rounded',   description='long "o", as in "toe"'),   # oʊ
+    Vowel(id_=113, char='ou', position=( (5, 0), (5, 6) ),  manner='tense', lips='unrounded', description='"ou", as in "out"'),       # aʊ
+    Vowel(id_=114, char='oi', position=( (9, 4), (5, 7) ),  manner='tense', lips='unrounded', description='"oi", as in "toil"')       # ɔɪ
 
 ]
 
-ID_TO_PHONEME = {phoneme.num: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
+ID_TO_PHONEME = {phoneme.id_: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
 
 
 # A syllable onset is the consonant(s) which begin a syllable
