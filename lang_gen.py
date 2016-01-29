@@ -14,8 +14,21 @@ import orthography
 This file generates languages which have distinct phonemes.
 '''
 
+# Chance of dropping an entire articulation method from the language
+LANGUAGE_DROP_ENTIRE_METHOD_CHANCE = 5
+# Chance of dropping an entire articulation location from the language
+LANGUAGE_DROP_ENTIRE_LOCATION_CHANCE = 10
+# Chance of dropping "th" from the language
+LANGUAGE_DROP_DENTAL_CHANCE = 65
+# Chance of dropping an entire voicing method (voiced / unvoiced) from the language
+LANGUAGE_DROP_ENTIRE_VOICING_CHANCE = 5
 
-LANGUAGE_DROP_VOICING_CHANCE = 5
+# Won't drop random consonants if fewer than this many consonants exist after the above
+LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD = 15
+# Chance of dropping random consonant
+LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE = 80
+# If dropping a random consonant it triggered, how many to drop?
+LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
 
 DROP_COMPLEX_ONSETS_CHANCE = 10
 DROP_COMPLEX_CODAS_CHANCE = 10
@@ -53,23 +66,38 @@ class Language:
         ''' Determine the phonemes which are valid in this language and the 
             frequency at which they occur '''
 
-        for i in xrange( roll(0, 2) ):
+        
+        # ------------------------- Drop some phonemes at the language level ----------------------- #
+        if chance(LANGUAGE_DROP_ENTIRE_METHOD_CHANCE):
             method = random.choice(p.CONSONANT_METHODS)
             print 'Dropping all {0}s'.format(method)
             self.drop_consonants(method=method)
 
-        for i in xrange( roll(0, 2) ):
+        if chance(LANGUAGE_DROP_DENTAL_CHANCE):
+            print 'Dropping dentals'
+            self.drop_consonants(location='dental')
+
+        if chance(LANGUAGE_DROP_ENTIRE_LOCATION_CHANCE):
             location = random.choice(p.CONSONANT_LOCATIONS)
             print 'Dropping all {0}s'.format(location)
             self.drop_consonants(location=location)
 
-        if chance(LANGUAGE_DROP_VOICING_CHANCE):
+        if chance(LANGUAGE_DROP_ENTIRE_VOICING_CHANCE):
             voicings = random.choice((0, 1))
             self.properties['language_voicing_restriction'] = voicings
             print 'Dropping with voicing of {0}'.format(voicings)
             self.drop_consonants(voicing=voicings)
         else:
             self.properties['language_voicing_restriction'] = None
+
+        # There is a chance for one or more random consonants to be removed as well
+        if len(self.valid_consonants) >= LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD and \
+                                         chance(LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE):
+
+            for i in xrange(random.choice(LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS)):
+                random_consonant = random.choice(tuple(self.valid_consonants))
+                self.valid_consonants.remove(random_consonant)
+        # ---------------------------- End language-level phoneme rules ------------------------------- #
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
         self.properties['no_complex_onsets'] = 1 if chance(DROP_COMPLEX_ONSETS_CHANCE) else 0
@@ -172,7 +200,7 @@ class Language:
                 self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
             elif onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 2) #roll(20, 35)
+                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
@@ -202,7 +230,7 @@ class Language:
                 self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex codas have a much smaller chance of appearing, partially because there's so many of them
             elif coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 2) #roll(20, 35)
+                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
@@ -311,6 +339,9 @@ class Language:
             # No /l/ or /r/ in codas when the onset contains one of these
             if onset.has_any_phoneme( (221, 224) ) and coda.has_any_phoneme( (221, 224) ):
                 continue
+            # Single syllable words without an onset must have a coda
+            if syllable_position == -1 and coda.is_empty():
+                continue
 
             # If the coda has made it through the gauntlet, break out of the loop and return it
             return coda
@@ -332,6 +363,9 @@ class Language:
                 continue
             # Only short vowels can occur before /ng/
             if coda.consonant_number_array[0] == 220 and vowel.length != 'short':
+                continue
+            # Diphthongs cannot occur in the middle of a word
+            if syllable_position == 1 and vowel.is_diphthong():
                 continue
 
             # If the vowel has made it through the gauntlet, break out of the loop and return it
