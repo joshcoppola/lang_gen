@@ -39,7 +39,16 @@ NO_CODA_MULTIPLIERS  = (.1, .25, .5, .5, 1, 2)
 ONSET_RESTRICT_VOICING_CHANCE = 20
 CODA_RESTRICT_VOICING_CHANCE  = 20
 
-KEEP_VOWEL_CHANCE = 80
+
+LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE = 25
+LANGUAGE_DROP_ALL_TENSE_MONPHTHONGS_CHANCE = 20
+
+LANGUAGE_DROP_ALL_ROUNDED_CHANCE = 10
+
+LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE = 20
+LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 35
+
+
 
 
 def chance(number):
@@ -47,25 +56,20 @@ def chance(number):
 
 class Language:
     def __init__(self):
+        self.properties = {}
+
+        self.valid_consonants = set([c for c in p.CONSONANTS if c.id_ < 300])
         self.onset_probabilities = {}
         self.coda_probabilities = {}
-        # self.vowel_probabilities_by_preceding_cluster = {}
-        # self.vowel_probabilities_by_following_cluster = {}
-        self.vowel_flat_probabilities = {}
+
+        self.vowel_probabilities = {}
 
         self.vocabulary = {}
         self.orthography = orthography.Orthography()
 
-        self.valid_vowels = set(p.VOWELS)
-        self.valid_consonants = set([c for c in p.CONSONANTS if c.num < 300])
-
-        self.properties = {}
-
-
     def generate_language_properties(self):
         ''' Determine the phonemes which are valid in this language and the 
             frequency at which they occur '''
-
         
         # ------------------------- Drop some phonemes at the language level ----------------------- #
         if chance(LANGUAGE_DROP_ENTIRE_METHOD_CHANCE):
@@ -97,6 +101,44 @@ class Language:
             for i in xrange(random.choice(LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS)):
                 random_consonant = random.choice(tuple(self.valid_consonants))
                 self.valid_consonants.remove(random_consonant)
+
+        # ------------------------------------------ Vowels ------------------------------------------- #
+
+        # -------- Set some initial parameters -------- #
+        drop_all_diphtongs = chance(LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE)
+
+        if drop_all_diphtongs:  drop_all_tense_monophthongs = chance(LANGUAGE_DROP_ALL_TENSE_MONPHTHONGS_CHANCE)
+        else:                   drop_all_tense_monophthongs = 0
+
+        if not drop_all_diphtongs and \
+           not drop_all_tense_monophthongs: drop_all_rounded = chance(LANGUAGE_DROP_ALL_ROUNDED_CHANCE)
+        else:                               drop_all_rounded = 0
+        # ------- End setting initial parameters ------- #
+
+        # Set vowel probabilities, can vary on preceding and following cluster
+        for vowel in p.VOWELS:
+            if drop_all_diphtongs and vowel.is_diphthong():
+                continue
+            if drop_all_tense_monophthongs and vowel.manner == 'tense' and not vowel.is_diphthong():
+                continue
+            if drop_all_rounded and vowel.lips == 'rounded':
+                continue
+
+            # Drop random vowels
+            if not vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE):
+                continue
+            if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
+                continue
+
+            self.vowel_probabilities[vowel] = int(random.lognormvariate(3, 1.2))
+
+        # If somehow we've ended up with a ridiculously low number of vowels,
+        # this loop ensures we'll be brought up to above 5 vowels total
+        while len(self.vowel_probabilities) < 5:
+            random_new_vowel = random.choice(tuple(p.VOWELS))
+            self.vowel_probabilities[random_new_vowel] = int(random.lognormvariate(3, 1.2))
+
+
         # ---------------------------- End language-level phoneme rules ------------------------------- #
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
@@ -133,48 +175,20 @@ class Language:
         self.generate_valid_codas()
 
 
-        vowels_to_remove = []
-        # Set vowel probabilities, can vary on preceding and following cluster
-        for v in self.valid_vowels:
-            # # Vowel probabilities are dicts of cluster: probability values,
-            # # themselves stored by vowel. The overall hashes below look like
-            # # { {vowel: {cluster: prob}, {cluster: prob}, ...}, {vowel2:{ ... } }  }
-            # self.vowel_probabilities_by_preceding_cluster[v] = {}
-            # self.vowel_probabilities_by_following_cluster[v] = {}
-
-            # # Choose between low, medium, and high probabilities for this vowel to occur after and before onset and coda clusters
-            # for (onset, probability) in self.onset_probabilities.iteritems():
-            #     # probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
-            #     probabity = int(random.lognormvariate(3, 1.2))
-            #     self.vowel_probabilities_by_preceding_cluster[v][onset] = probability
-            
-            # for (coda, probability) in self.coda_probabilities.iteritems():
-            #     # probability = roll(75, 150) if not v.is_diphthong() else roll(1, 8)
-            #     probabity = int(random.lognormvariate(3, 1.2))
-            #     self.vowel_probabilities_by_following_cluster[v][coda] = probability
-            if chance(KEEP_VOWEL_CHANCE):
-                self.vowel_flat_probabilities[v] = int(random.lognormvariate(3, 1.2))
-            else:
-                vowels_to_remove.append(v)
-
-        # Avoid modifying self.valid_vowels while iterating over it :)
-        for vowel in vowels_to_remove:
-            self.valid_vowels.remove(vowel)
-
         ## ------------------------- Print out some info ---------------------------- ##
 
-        self.describe_syllable_level_rules(syllable_part='onset', no_complex=self.properties['no_complex_onsets'],
+        print self.describe_syllable_level_rules(syllable_part='onset', no_complex=self.properties['no_complex_onsets'],
                                             voicing_restriction=self.properties['onset_voicing_restriction'],
                                             voicing_restriction_exclusion=self.properties['invert_onset_voicing_restriction'])
 
-        self.describe_syllable_level_rules(syllable_part='coda', no_complex=self.properties['no_complex_codas'],
+        print self.describe_syllable_level_rules(syllable_part='coda', no_complex=self.properties['no_complex_codas'],
                                             voicing_restriction=self.properties['coda_voicing_restriction'],
                                             voicing_restriction_exclusion=self.properties['invert_coda_voicing_restriction'])
 
         print 'No onset mutiplier: {0}'.format(self.properties['no_onset_multiplier'])
         print 'No coda mutiplier: {0}'.format(self.properties['no_coda_multiplier'])
 
-        print 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.valid_vowels))
+        print 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.vowel_probabilities))
 
 
     def generate_valid_onsets(self):
@@ -251,7 +265,7 @@ class Language:
             if voicing_restriction_exclusion == 1:  voicing_description = 'only {0} consonants can appear'.format(voicing)
             else:                                   voicing_description = '{0} consonants cannot appear'.format(voicing)
 
-        print 'Syllable {0}s {1}, and {2}'.format(syllable_part, complexity_description, voicing_description)
+        return 'Syllable {0}s {1}, and {2}'.format(syllable_part, complexity_description, voicing_description)
 
 
     def get_matching_consonants(self, location='any', method='any', voicing='any', exclude_matches=0):
@@ -288,9 +302,9 @@ class Language:
 
             vowel = self.choose_valid_vowel(onset=onset, coda=coda, syllable_position=syllable_position)
 
-            word.extend([c.num for c in onset.consonant_array])
-            word.append(vowel.num)
-            word.extend([c.num for c in coda.consonant_array])
+            word.extend([c.id_ for c in onset.consonant_array])
+            word.append(vowel.id_)
+            word.extend([c.id_ for c in coda.consonant_array])
 
         self.orthography.phon_to_orth(phoneme_sequence=word)
 
@@ -310,13 +324,13 @@ class Language:
 
         # Otherwise, generate an onset with some restrictions
         # Stash the previous coda's last phoneme in case we need to check it multiple times
-        previous_coda_last_phoneme = previous_coda.consonant_number_array[-1]
+        previous_coda_last_phoneme = previous_coda.consonant_id_array[-1]
 
         # Loop through and generate onsets until one matches all criteria
         while True:
             onset = weighted_random(self.onset_probabilities)
             # Can't start one syllable off with the same phoneme that the previous ended with
-            if onset.consonant_number_array[-1] == previous_coda_last_phoneme:
+            if onset.consonant_id_array[-1] == previous_coda_last_phoneme:
                 continue
             # Can't have an open coda followed by an empty onset
             if onset.is_empty() and previous_coda.is_empty():
@@ -349,20 +363,16 @@ class Language:
 
     def choose_valid_vowel(self, onset, coda, syllable_position):
         ''' Choose a valid vowel given an onset, coda, and syllable position '''
-        # Find the probabilities of each vowel occuring based on the phoneme clusters surrounding it
-        # vowel_probabilities = {v: self.vowel_probabilities_by_preceding_cluster[v][onset] + 
-        #                           self.vowel_probabilities_by_following_cluster[v][coda] for v in self.valid_vowels}                         
-        
+
         while True:
             # Generate the vowel based off of the combined weighings of the vowels surrounding it
-            # vowel = weighted_random(vowel_probabilities)
-            vowel = weighted_random(self.vowel_flat_probabilities)
+            vowel = weighted_random(self.vowel_probabilities)
 
             # A short vowel cannot occur if there is no consonant in the coda
-            if coda.is_empty() and vowel.length == 'short':
+            if coda.is_empty() and vowel.manner == 'lax':
                 continue
             # Only short vowels can occur before /ng/
-            if coda.consonant_number_array[0] == 220 and vowel.length != 'short':
+            if coda.consonant_id_array[0] == 220 and vowel.manner != 'lax':
                 continue
             # Diphthongs cannot occur in the middle of a word
             if syllable_position == 1 and vowel.is_diphthong():
@@ -401,7 +411,7 @@ class Language:
         coda_probabilities = sorted(((self.coda_probabilities[cons], cons) for cons in self.coda_probabilities.keys()), reverse=True)
         table_data.append(['{0: >4} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities])
 
-        vowel_probabilities = sorted(((self.vowel_flat_probabilities[v], v) for v in self.vowel_flat_probabilities.keys()), reverse=True)
+        vowel_probabilities = sorted(((self.vowel_probabilities[v], v) for v in self.vowel_probabilities.keys()), reverse=True)
         table_data.append(['{0: >4} {1}'.format(perc, v.get_string()) for perc, v in vowel_probabilities])
 
 
