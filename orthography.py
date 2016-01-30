@@ -151,35 +151,50 @@ PHONEMES_WRITTEN = {
     113:'ou', # out
     114:'oi', # toil
 
+    115:'eo', # beorn
+    
     # ----------- Consonants ----------- #
 
     300:'', # (300 and 301 are special - used at syllable onsets which don't start with
     301:'', # a consonant and syllable codas which don't end with a consonant, respectively
 
-    201:'p',
-    202:'b',
-    203:'t',
-    204:'d',
-    205:'k',  # 'q' 'c'
-    206:'g',
+    201:'p',  # ph 
+    202:'b',  # bh bw?
+    203:'t',  # ts
+    204:'d',  # dz
+    205:'k',  # kn kh kw? 'q' 'c'
+    206:'g',  # gn gh
     207:'ch', # 'c' c_s
     208:'j',  # 'g'
     209:'f',  # 'ph'
     210:'v',
-    211:'th',
-    212:'th',
+    211:'th', 
+    212:'th', # dh
     213:'s',
     214:'z',
     215:'sh',
     216:'zh', # 'z' c_s
     217:'h',
-    218:'m',
-    219:'n',
+    218:'m',  # mb
+    219:'n',  # cn
     220:'ng', # chr(237) chr(238)
     221:'r',
     222:'y',
     223:'w',
-    224:'l'
+    224:'l',
+
+
+    230: 'kn',
+    231: 'gn',
+    232: 'cy',
+    233: 'gy',
+    234: 'ts',
+    235: 'dz',
+    236: 'xh',
+    237: 'gh',
+    238: 'r~',
+    239: 'b~',
+    240: '\''
     }
 
 

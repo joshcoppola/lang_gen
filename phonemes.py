@@ -210,25 +210,38 @@ CONSONANTS = [
     Consonant(224, 'l',  'alveolar',     'lateral',     3, '"l"'),
 
     # Empty word-initial onset
-    Consonant(300, '', 'onset',          'word-initial', 3, ''),
+    Consonant(300, '',   'onset',        'word-initial', 3, ''),
     # Empty word-final coda
-    Consonant(301, '',  'coda',          'word-final',   3, ''),
+    Consonant(301, '',   'coda',         'word-final',   3, ''),
+
+    Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
+    Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
+    Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
+    Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
+    Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
+    Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
+    Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
+    Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
+    Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
+    Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"')          # B
+    # Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
     ]
 
 
-# Source: https://en.wikipedia.org/wiki/Diphthong#English
-# low    oʊ ~ ʌʊ   8, 5 -> 9, 7
-# loud   aʊ̯~ æʊ    5, 0 -> 5, 6
-# -lout             covered ^
-# lied   äɪ        3, 0 -> 4, 7
-# -light ʌɪ         covered ^
-# lane   eɪ        0, 5 -> 3, 7
-# loin   ɔɪ        9, 4 -> 5, 7
-# -loon  ʉu         covered by 111
-# -lean  i          covered by 102
-# leer   ɪɚ 
-# lair   ɛɚ
-# lure   ʊɚ
+# NON_ENGLISH_CONSONANTS = [
+#     Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
+#     Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
+#     Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
+#     Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
+#     Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
+#     Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
+#     Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
+#     Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
+#     Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
+#     Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"'),          # B
+#     Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
+#     ]
+
 
 VOWELS = [
 
@@ -248,8 +261,12 @@ VOWELS = [
     Vowel(id_=108, char='ie', position=( (3, 0), (4, 7) ),  manner='tense', lips='unrounded', description='long "i", as in "hide"'),  # äɪ
     Vowel(id_=109, char='o',  position=( (8, 5), (9, 7) ),  manner='tense', lips='rounded',   description='long "o", as in "toe"'),   # oʊ
     Vowel(id_=113, char='ou', position=( (5, 0), (5, 6) ),  manner='tense', lips='unrounded', description='"ou", as in "out"'),       # aʊ
-    Vowel(id_=114, char='oi', position=( (9, 4), (5, 7) ),  manner='tense', lips='unrounded', description='"oi", as in "toil"')       # ɔɪ
-
+    Vowel(id_=114, char='oi', position=( (9, 4), (5, 7) ),  manner='tense', lips='unrounded', description='"oi", as in "toil"'),      # ɔɪ
+    Vowel(id_=115, char='eo', position=( (0, 7), (9, 7) ),  manner='tense', lips='unrounded', description='"eo", as in "beorn"')      # eo
+    # Source: https://en.wikipedia.org/wiki/Diphthong#English
+    # leer   ɪɚ 
+    # lair   ɛɚ
+    # lure   ʊɚ
 ]
 
 ID_TO_PHONEME = {phoneme.id_: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
@@ -311,12 +328,24 @@ POSSIBLE_ONSETS = [
     # ---------------------------------------------------------- #
     PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
                                 Rule('any', 'plosive', 0, []), 
-                                Rule('any', 'approximant', 'any', [222, 223]) )
+                                Rule('any', 'approximant', 'any', [222, 223]) ),
     # spl
     # PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
     #                    Rule('any', 'plosive', 0, [203, 205]),
     #                    Rule('any', 'lateral', 'any', [222, 223]) )
     # ---------------------------------------------------------- #
+    
+    PClusterGenerator( 'onset', Rule('palatal',  'nasal',     0, []) ),  # ɲ̊
+    PClusterGenerator( 'onset', Rule('palatal',  'nasal',     1, []) ),  # ɲ
+    PClusterGenerator( 'onset', Rule('palatal',  'stop',      0, []) ),  # c
+    PClusterGenerator( 'onset', Rule('palatal',  'stop',      1, []) ),  # ɟ
+    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    PClusterGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    PClusterGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    PClusterGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    PClusterGenerator( 'onset', Rule('bilabial', 'trill',     1, []) ),  # B
+    # PClusterGenerator( 'onset', Rule('glottal',  'stop',      0, []) )   # ʔ
     ]
 
 
@@ -432,7 +461,15 @@ POSSIBLE_CODAS =  [
                                Rule('alveolar', 'fricative', 0, []) ),
     # /dθ/
     PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 1, []),
-                               Rule('dental', 'fricative', 0, []) )
+                               Rule('dental', 'fricative', 0, []) ),
+
+
+    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    PClusterGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    PClusterGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    PClusterGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    PClusterGenerator( 'onset', Rule('bilabial', 'trill',     1, []) )  # B
     ]
 
 

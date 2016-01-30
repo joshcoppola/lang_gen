@@ -30,23 +30,30 @@ LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE = 80
 # If dropping a random consonant it triggered, how many to drop?
 LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
 
+# The chance that a particular language will forbid complex onsets
 DROP_COMPLEX_ONSETS_CHANCE = 10
+# The chance that a particular language will forbid complex codas, 
+# if it has not forbidden complex onsets
 DROP_COMPLEX_CODAS_CHANCE = 10
 
-NO_ONSET_MULTIPLIERS = (.1, .5, 1, 1, 2, 5)
-NO_CODA_MULTIPLIERS  = (.1, .25, .5, .5, 1, 2)
+# This is the proportion of null onsets or codas that a language has in relation 
+# to all other onsets. A multiplier of 1 means null onsets occur 50% of the time
+# and a multiplier of .1 means null onsets occur 10% of the time
+NO_ONSET_MULTIPLIERS = (0, .1, .5, 1, 1, 2, 5)
+NO_CODA_MULTIPLIERS  = (0, .1, .25, .5, .5, 1, 2)
 
-ONSET_RESTRICT_VOICING_CHANCE = 20
-CODA_RESTRICT_VOICING_CHANCE  = 20
+# The chances of having a language restrict syllable onsets or codas by voicing
+ONSET_RESTRICT_VOICING_CHANCE = 15
+CODA_RESTRICT_VOICING_CHANCE  = 15
 
-
+# The chance of dropping all diphthongs or dropping all tense monphthong vowels
 LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE = 25
 LANGUAGE_DROP_ALL_TENSE_MONPHTHONGS_CHANCE = 20
-
+# The chance of dropping all rounded vowels
 LANGUAGE_DROP_ALL_ROUNDED_CHANCE = 10
-
+# The chance of dropping random monophthongs / diphthongs
 LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE = 20
-LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 35
+LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
 
 
@@ -130,7 +137,11 @@ class Language:
             if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
                 continue
 
-            self.vowel_probabilities[vowel] = int(random.lognormvariate(3, 1.2))
+            # Diphthongs have less chance of occuring as regular vowels
+            if not vowel.is_diphthong():
+                self.vowel_probabilities[vowel] = int(random.lognormvariate(3, 1.2))
+            else:
+                self.vowel_probabilities[vowel] = int(random.lognormvariate(3, 1.2) / 2) 
 
         # If somehow we've ended up with a ridiculously low number of vowels,
         # this loop ensures we'll be brought up to above 5 vowels total
@@ -379,9 +390,7 @@ class Language:
                 continue
 
             # If the vowel has made it through the gauntlet, break out of the loop and return it
-            break
-
-        return vowel
+            return vowel
 
 
     def get_syllable_position(self, current_syllable, total_syllables):
@@ -394,7 +403,7 @@ class Language:
         # Only 1 syllable in the word
         if total_syllables == 1:    return -1
         # On the first syllable
-        if current_syllable == 0:   return 0
+        elif current_syllable == 0:   return 0
         # On the last syllable
         elif current_syllable == \
              total_syllables - 1:   return 2
