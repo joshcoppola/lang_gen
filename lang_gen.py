@@ -1,5 +1,5 @@
 
-
+from __future__ import division
 import random
 from random import randint as roll
 
@@ -317,7 +317,7 @@ class Language:
             word.append(vowel.id_)
             word.extend([c.id_ for c in coda.consonant_array])
 
-        self.orthography.phon_to_orth(phoneme_sequence=word)
+        return self.orthography.phon_to_orth(phoneme_sequence=word)
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
@@ -458,8 +458,11 @@ if __name__ == '__main__':
     t.info_dump()
     
     # print ' ---->', roll(1, 100), '<----'
-    for i in xrange(20):
-        t.create_word(syllables=random.choice( (1, 1, 1, 1, 2, 2, 3) ))
+    for i in xrange(12):
+        print '{: <14} {: <14} {: <14}'.format(t.create_word(syllables=1),
+                                               t.create_word(syllables=2),
+                                               t.create_word(syllables=3))
+
     # print ' ---->', roll(1, 100), '<----'
     print ''
 

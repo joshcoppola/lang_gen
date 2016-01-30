@@ -1,5 +1,6 @@
 # coding=Latin-1
 
+from __future__ import division
 from random import randint as roll
 
 from lang_gen import weighted_random
@@ -267,7 +268,7 @@ class Orthography:
             orth += PHONEMES_WRITTEN[p]
 
 
-        print orth
+        return orth
 
 
 
