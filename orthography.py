@@ -148,7 +148,7 @@ PHONEMES_WRITTEN = {
     109:'o',  # toe
     110:'u',  # good      'eu'  'eo'
     111:'u',  # blue      'ue'
-    112:'au', # auger
+    112:'a', # saw
     113:'ou', # out
     114:'oi', # toil
 

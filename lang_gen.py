@@ -455,7 +455,7 @@ if __name__ == '__main__':
     t = Language()
     t.generate_language_properties()
 
-    t.info_dump()
+    # t.info_dump()
     
     # print ' ---->', roll(1, 100), '<----'
     for i in xrange(12):
