@@ -56,13 +56,21 @@ LANGUAGE_DROP_ALL_ROUNDED_CHANCE = 10
 LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE = 20
 LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
+def chance(number):
+    return roll(1, 100) <= number
 
 # A data structure containing phoneme #s for different parts of the syllable
 Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 
+class Word:
+    def __init__(self, syllables):
+        self.syllables = syllables
 
-def chance(number):
-    return roll(1, 100) <= number
+        # Writing as a generator comprehension for speed, at the cost of readability?
+        self.phoneme_ids =  tuple(phoneme_id 
+                            for syllable in syllables
+                                for component in syllable
+                                    for phoneme_id in component)
 
 class Language:
     def __init__(self):
@@ -112,51 +120,10 @@ class Language:
                 random_consonant = random.choice(tuple(self.valid_consonants))
                 self.valid_consonants.remove(random_consonant)
 
-        # ------------------------------------------ Vowels ------------------------------------------- #
-
-        # -------- Set some initial parameters -------- #
-        drop_all_diphtongs = chance(LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE)
-
-        if drop_all_diphtongs:  drop_all_tense_monophthongs = chance(LANGUAGE_DROP_ALL_TENSE_MONPHTHONGS_CHANCE)
-        else:                   drop_all_tense_monophthongs = 0
-
-        if not drop_all_diphtongs and \
-           not drop_all_tense_monophthongs: drop_all_rounded = chance(LANGUAGE_DROP_ALL_ROUNDED_CHANCE)
-        else:                               drop_all_rounded = 0
-        # ------- End setting initial parameters ------- #
-
-        # Set vowel probabilities, can vary on preceding and following cluster
-        for nucleus in p.data.syllable_nuclei:
-            # Nuclei will always have 1 phoneme - the vowel
-            vowel = nucleus.phonemes[0]
-
-            if drop_all_diphtongs and vowel.is_diphthong():
-                continue
-            if drop_all_tense_monophthongs and vowel.manner == 'tense' and not vowel.is_diphthong():
-                continue
-            if drop_all_rounded and vowel.lips == 'rounded':
-                continue
-
-            # Drop random vowels
-            if not vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE):
-                continue
-            if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
-                continue
-
-            # Diphthongs have less chance of occuring as regular vowels
-            if not vowel.is_diphthong():
-                self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2))
-            else:
-                self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2) / 2) 
-
-        # If somehow we've ended up with a ridiculously low number of vowels,
-        # this loop ensures we'll be brought up to above 5 vowels total
-        while len(self.nuclei_probabilities) < 5:
-            random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
-            self.nuclei_probabilities[random_new_nucleus] = int(random.lognormvariate(3, 1.2))
-
-
+        # Finally, choose some valid nuclei (vowels) in this language
+        self.generate_valid_nuclei()
         # ---------------------------- End language-level phoneme rules ------------------------------- #
+
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
         self.properties['no_complex_onsets'] = 1 if chance(DROP_COMPLEX_ONSETS_CHANCE) else 0
@@ -187,7 +154,6 @@ class Language:
         # ------------------------------------------------------------------- #
 
         # Now, figure out probabilities for each of the onsets and codas
-        # If this language contains all consonants in a possible onset or coda, add a random frequency at which the it occurs
         self.generate_valid_onsets()
         self.generate_valid_codas()
 
@@ -268,6 +234,51 @@ class Language:
         self.coda_probabilities[p.data.empty_coda] = probability_of_no_coda
 
 
+    def generate_valid_nuclei(self):
+        ''' Contains some logic for choosing which vowels will be used in this language '''
+
+        # -------- Set some initial parameters -------- #
+        drop_all_diphtongs = chance(LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE)
+
+        if drop_all_diphtongs:  drop_all_tense_monophthongs = chance(LANGUAGE_DROP_ALL_TENSE_MONPHTHONGS_CHANCE)
+        else:                   drop_all_tense_monophthongs = 0
+
+        if not drop_all_diphtongs and \
+           not drop_all_tense_monophthongs: drop_all_rounded = chance(LANGUAGE_DROP_ALL_ROUNDED_CHANCE)
+        else:                               drop_all_rounded = 0
+        # ------- End setting initial parameters ------- #
+
+        # Set vowel probabilities, can vary on preceding and following cluster
+        for nucleus in p.data.syllable_nuclei:
+            # Nuclei will always have 1 phoneme - the vowel
+            vowel = nucleus.phonemes[0]
+
+            if drop_all_diphtongs and vowel.is_diphthong():
+                continue
+            if drop_all_tense_monophthongs and vowel.manner == 'tense' and not vowel.is_diphthong():
+                continue
+            if drop_all_rounded and vowel.lips == 'rounded':
+                continue
+
+            # Drop random vowels
+            if not vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE):
+                continue
+            if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
+                continue
+
+            # Diphthongs have less chance of occuring as regular vowels
+            if not vowel.is_diphthong():
+                self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2))
+            else:
+                self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2) / 2) 
+
+        # If somehow we've ended up with a ridiculously low number of vowels,
+        # this loop ensures we'll be brought up to above 5 vowels total
+        while len(self.nuclei_probabilities) < 5:
+            random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
+            self.nuclei_probabilities[random_new_nucleus] = int(random.lognormvariate(3, 1.2))
+
+
     def describe_syllable_level_rules(self, syllable_part, no_complex, voicing_restriction, voicing_restriction_exclusion):
         ''' Placeholder function to describe syllable-level phonemic restrictions '''
 
@@ -304,26 +315,27 @@ class Language:
             self.valid_consonants.remove(consonant)
 
 
-    def create_word(self, syllables=2):
+    def create_word(self, number_of_syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
         
-        word = []
+        
+        syllables = []
         # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
         coda = None
 
-        for i in xrange(syllables):            
-            syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=syllables)
+        for i in xrange(number_of_syllables):            
+            syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=number_of_syllables)
 
             onset = self.choose_valid_onset(previous_coda=coda, syllable_position=syllable_position)
             coda  = self.choose_valid_coda(onset=onset, syllable_position=syllable_position)
 
-            vowel = self.choose_valid_nucleus(onset=onset, coda=coda, syllable_position=syllable_position)
+            nucleus = self.choose_valid_nucleus(onset=onset, coda=coda, syllable_position=syllable_position)
 
-            word.extend([c.id_ for c in onset.phonemes])
-            word.append(vowel.id_)
-            word.extend([c.id_ for c in coda.phonemes])
+            syllables.append(Syllable(onset=onset.phoneme_ids, nucleus=nucleus.phoneme_ids, coda=coda.phoneme_ids))
 
-        return self.orthography.phon_to_orth(phoneme_sequence=word)
+        word = Word(syllables=syllables)
+
+        return self.orthography.phon_to_orth(phoneme_sequence=word.phoneme_ids)
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
@@ -396,8 +408,8 @@ class Language:
             if syllable_position == 1 and vowel.is_diphthong():
                 continue
 
-            # If the vowel has made it through the gauntlet, break out of the loop and return it
-            return vowel
+            # If the nucleus has made it through the gauntlet, break out of the loop and return it
+            return nucleus
 
 
     def get_syllable_position(self, current_syllable, total_syllables):
@@ -410,7 +422,7 @@ class Language:
         # Only 1 syllable in the word
         if total_syllables == 1:    return -1
         # On the first syllable
-        elif current_syllable == 0:   return 0
+        elif current_syllable == 0: return 0
         # On the last syllable
         elif current_syllable == \
              total_syllables - 1:   return 2
@@ -419,19 +431,23 @@ class Language:
 
 
     def info_dump(self):
+        ''' Summarize some basic information about the language and print it out '''
         table_data = []
 
-        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) for cons in self.onset_probabilities.keys()), reverse=True)
-        table_data.append(['{0: >4} {1}'.format(perc, c.get_string()) for perc, c in onset_probabilities])
+        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) 
+            for cons in self.onset_probabilities.keys()), reverse=True)
+        table_data.append('{0: >4} {1}'.format(perc, c.get_string()) for perc, c in onset_probabilities)
 
-        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) for cons in self.coda_probabilities.keys()), reverse=True)
-        table_data.append(['{0: >4} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities])
+        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) 
+            for cons in self.coda_probabilities.keys()), reverse=True)
+        table_data.append('{0: >4} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities)
 
-        nuclei_probabilities = sorted(((self.nuclei_probabilities[v], v) for v in self.nuclei_probabilities.keys()), reverse=True)
-        table_data.append(['{0: >4} {1}'.format(perc, v.get_string()) for perc, v in nuclei_probabilities])
+        nuclei_probabilities = sorted(((self.nuclei_probabilities[v], v) 
+            for v in self.nuclei_probabilities.keys()), reverse=True)
+        table_data.append('{0: >4} {1}'.format(perc, v.get_string()) for perc, v in nuclei_probabilities)
 
-
-        print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Vowels'))
+        # Print valid onsets, codas, and nuclei
+        print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Nuclei'))
         for i, row in enumerate(itertools.izip_longest(*table_data, fillvalue="")):
             print("{: <12} {: <12} {: <12}".format(*row))
             if i > 5: break
@@ -467,9 +483,9 @@ if __name__ == '__main__':
     
     # print ' ---->', roll(1, 100), '<----'
     for i in xrange(12):
-        print '{: <14} {: <14} {: <14}'.format(t.create_word(syllables=1),
-                                               t.create_word(syllables=2),
-                                               t.create_word(syllables=3))
+        print '{: <14} {: <14} {: <14}'.format(t.create_word(number_of_syllables=1),
+                                               t.create_word(number_of_syllables=2),
+                                               t.create_word(number_of_syllables=3))
 
     # print ' ---->', roll(1, 100), '<----'
     print ''
