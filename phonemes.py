@@ -56,12 +56,16 @@ class Vowel:
         return self.char
 
 
-class PCluster:
+class SyllableComponent:
     ''' This class contains an array of phoneme objects for 
     a single cluster. Many "clusters" are a single phoneme,
     but many contain multiple phonemes. '''
-    def __init__(self, cluster_loc, consonant_array, rule_set):
-        self.cluster_loc = cluster_loc
+    newid = itertools.count().next
+
+    def __init__(self, type_, consonant_array, rule_set):
+        self.id_ = SyllableComponent.newid()
+
+        self.type_ = type_
         
         # Contains the raw consonants
         self.consonant_array = consonant_array
@@ -90,21 +94,21 @@ class PCluster:
         return cstr
 
 
-class PClusterGenerator:
+class SyllableComponentGenerator:
     ''' This class contains rules to generate clusters of phonemes. A cluster
     can be a syllable onset or coda. Many clusters are a single consonant, but
     there are some complex ones like "spr". The clusters are defined by rules,
     and this class will convert those rules into every possible permutation of
     clusters which match the rules '''
-    def __init__(self, cluster_loc, *phoneme_properties):
-        self.cluster_loc = cluster_loc
+    def __init__(self, type_, *phoneme_properties):
+        self.type_ = type_
         self.phoneme_properties = phoneme_properties
 
         rule_descriptions = [rule.describe_rule() for rule in self.phoneme_properties]
         self.rule_set = ' followed by '.join(rule_descriptions)
 
     def generate(self):
-        ''' Generates specific Phoneme Cluster objects (PCluster) from a set of
+        ''' Generates specific SyllableComponent objects from a set of
             rules defined in self.property_list '''
         # array of arrays tracking all matching consonants
         converted_to_consonants_mega_list = [find_consonants(property.location, property.method, property.voicing, property.exceptions) for property in self.phoneme_properties]
@@ -116,7 +120,7 @@ class PClusterGenerator:
 
         # Filter out any cluster which contains repeated phonemes (Certain generalized rules can cause this to occur)
         # and create the actual phoneme cluster object from this.
-        all_permutations_worked = [PCluster(self.cluster_loc, permutation, self.rule_set) for permutation in all_permutations
+        all_permutations_worked = [SyllableComponent(self.type_, permutation, self.rule_set) for permutation in all_permutations
                                      if all((phoneme_occurence == 1 for phoneme_occurence in Counter(permutation).values())) ]
 
         return all_permutations_worked        
@@ -215,18 +219,30 @@ CONSONANTS = [
     # Empty word-final coda
     Consonant(301, '',   'coda',         'word-final',   3, ''),
 
-    Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
-    Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
-    Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
-    Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
-    Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
-    Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
-    Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
-    Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
-    Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
-    Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"')          # B
+    # Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
+    # Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
+    # Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
+    # Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
+    # Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
+    # Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
+    # Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
+    # Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
+    # Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
+    # Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"')          # B
     # Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
     ]
+
+# http://www.frathwiki.com/Coronal_consonant
+# Coronal consonants are those consonants articulated with the front part of the tongue (the corona). 
+# This is a cover term inclusing several places of articulation, 
+# depending on where contact/constriction is made:
+
+#     linguolabials (at the lips; may also count as labial consonants)
+#     interdentals (between the teeth)
+#     dentals (at the teeth)
+#     alveolars (at the alveolar ridge)
+#     postalveolars (at the hard palate)
+
 
 
 # NON_ENGLISH_CONSONANTS = [
@@ -275,210 +291,210 @@ ID_TO_PHONEME = {phoneme.id_: phoneme for phoneme in itertools.chain(CONSONANTS,
 
 # A syllable onset is the consonant(s) which begin a syllable
 POSSIBLE_ONSETS = [
-    PClusterGenerator( 'onset', Rule('bilabial', 'plosive', 0, []) ),
-    PClusterGenerator( 'onset', Rule('bilabial', 'plosive', 1, []) ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'plosive', 0, []) ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'plosive', 1, []) ),
-    PClusterGenerator( 'onset', Rule('velar', 'plosive', 0, []) ),
-    PClusterGenerator( 'onset', Rule('velar', 'plosive', 1, []) ),
-    PClusterGenerator( 'onset', Rule('post-alveolar', 'affricate', 0, []) ),
-    PClusterGenerator( 'onset', Rule('post-alveolar', 'affricate', 1, []) ),
-    PClusterGenerator( 'onset', Rule('labio-dental', 'fricative', 0, []) ),
-    PClusterGenerator( 'onset', Rule('labio-dental', 'fricative', 1, []) ),
-    PClusterGenerator( 'onset', Rule('dental', 'fricative', 0, []) ),
-    PClusterGenerator( 'onset', Rule('dental', 'fricative', 1, []) ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 1, []) ),
-    PClusterGenerator( 'onset', Rule('post-alveolar', 'fricative', 0, []) ),
-    #PClusterGenerator( [['post-alveolar', 'fricative', 1, []] ] ),
-    PClusterGenerator( 'onset', Rule('glottal', 'fricative', 3, []) ),
-    PClusterGenerator( 'onset', Rule('bilabial', 'nasal', 3, []) ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'nasal', 3, []) ),
-    #PClusterGenerator( [['velar', 'nasal', 3, []] ] ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'approximant', 3, []) ),
-    PClusterGenerator( 'onset', Rule('palatal', 'approximant', 3, []) ),
-    PClusterGenerator( 'onset', Rule('velar', 'approximant', 3, []) ), # w  -- originally had been commented out
-    PClusterGenerator( 'onset', Rule('alveolar', 'lateral', 3, []) ),
+    SyllableComponentGenerator( 'onset', Rule('bilabial', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('bilabial', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('velar', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('velar', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('post-alveolar', 'affricate', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('post-alveolar', 'affricate', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('labio-dental', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('labio-dental', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('dental', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('dental', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'onset', Rule('post-alveolar', 'fricative', 0, []) ),
+    #SyllableComponentGenerator( [['post-alveolar', 'fricative', 1, []] ] ),
+    SyllableComponentGenerator( 'onset', Rule('glottal', 'fricative', 3, []) ),
+    SyllableComponentGenerator( 'onset', Rule('bilabial', 'nasal', 3, []) ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'nasal', 3, []) ),
+    #SyllableComponentGenerator( [['velar', 'nasal', 3, []] ] ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'approximant', 3, []) ),
+    SyllableComponentGenerator( 'onset', Rule('palatal', 'approximant', 3, []) ),
+    SyllableComponentGenerator( 'onset', Rule('velar', 'approximant', 3, []) ), # w  -- originally had been commented out
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'lateral', 3, []) ),
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( 'onset', Rule('any', 'plosive', 'any', []),
+    SyllableComponentGenerator( 'onset', Rule('any', 'plosive', 'any', []),
                                 Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( 'onset', Rule('any', 'plosive', 'any', []),
+    SyllableComponentGenerator( 'onset', Rule('any', 'plosive', 'any', []),
                                 Rule('any', 'lateral', 'any', [222, 223]) ),
     # ---------------------------------------------------------- #
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
+    SyllableComponentGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
                                 Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    PClusterGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
+    SyllableComponentGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
                                 Rule('any', 'lateral', 'any', [222, 223]) ),
     # ---------------------------------------------------------- #
 
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 0, []),
                                 Rule('any', 'plosive', 0, []) ),
 
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
                                 Rule('any', 'nasal', 'any', [220]) ),
 
-    #PClusterGenerator( [[213, 'any', []], ['fricative', 'any', 0, [211, 212, 213, 215, 216]] ] ),
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+    #SyllableComponentGenerator( [[213, 'any', []], ['fricative', 'any', 0, [211, 212, 213, 215, 216]] ] ),
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
                                 Rule('any', 'fricative', 0, [211, 213, 215]) ),
 
     # ---------------------------------------------------------- #
-    PClusterGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'fricative', 0, []), 
                                 Rule('any', 'plosive', 0, []), 
                                 Rule('any', 'approximant', 'any', [222, 223]) ),
     # spl
-    # PClusterGenerator( Rule('alveolar', 'fricative', 0, []),
+    # SyllableComponentGenerator( Rule('alveolar', 'fricative', 0, []),
     #                    Rule('any', 'plosive', 0, [203, 205]),
     #                    Rule('any', 'lateral', 'any', [222, 223]) )
     # ---------------------------------------------------------- #
     
-    PClusterGenerator( 'onset', Rule('palatal',  'nasal',     0, []) ),  # ɲ̊
-    PClusterGenerator( 'onset', Rule('palatal',  'nasal',     1, []) ),  # ɲ
-    PClusterGenerator( 'onset', Rule('palatal',  'stop',      0, []) ),  # c
-    PClusterGenerator( 'onset', Rule('palatal',  'stop',      1, []) ),  # ɟ
-    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
-    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
-    PClusterGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
-    PClusterGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
-    PClusterGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
-    PClusterGenerator( 'onset', Rule('bilabial', 'trill',     1, []) ),  # B
-    # PClusterGenerator( 'onset', Rule('glottal',  'stop',      0, []) )   # ʔ
+    # SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     0, []) ),  # ɲ̊
+    # SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     1, []) ),  # ɲ
+    # SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      0, []) ),  # c
+    # SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      1, []) ),  # ɟ
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    # SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) ),  # B
+    # SyllableComponentGenerator( 'onset', Rule('glottal',  'stop',      0, []) )   # ʔ
     ]
 
 
 # A syllable coda is the consonant(s) which end a syllable
 POSSIBLE_CODAS =  [
-    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 0, []) ),
-    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 1, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 0, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 1, []) ),
-    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []) ),
-    PClusterGenerator( 'coda', Rule('velar', 'plosive', 1, []) ),
-    PClusterGenerator( 'coda', Rule('post-alveolar', 'affricate', 0, []) ),
-    PClusterGenerator( 'coda', Rule('post-alveolar', 'affricate', 1, []) ),
-    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []) ),
-    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 1, []) ),
-    PClusterGenerator( 'coda', Rule('dental', 'fricative', 0, []) ),
-    PClusterGenerator( 'coda', Rule('dental', 'fricative', 1, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 1, []) ),
-    PClusterGenerator( 'coda', Rule('post-alveolar', 'fricative', 0, []) ),
-    PClusterGenerator( 'coda', Rule('post-alveolar', 'fricative', 1, []) ),
-    # PClusterGenerator( Rule('glottal', 'fricative', 3, []) ), # /h/
-    PClusterGenerator( 'coda', Rule('bilabial', 'nasal', 3, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'nasal', 3, []) ),
-    PClusterGenerator( 'coda', Rule('velar', 'nasal', 3, []) ),
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []) ),
-    # PClusterGenerator( Rule('palatal', 'approximant', 3, []) ), #/j/  (like in pure, cute, ...)
-    #PClusterGenerator( [['velar', 'approximant', 3, []] ] ), #w
-    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []) ),
+    SyllableComponentGenerator( 'coda', Rule('bilabial', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('bilabial', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('velar', 'plosive', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('velar', 'plosive', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('post-alveolar', 'affricate', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('post-alveolar', 'affricate', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('labio-dental', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('dental', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('dental', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'fricative', 1, []) ),
+    SyllableComponentGenerator( 'coda', Rule('post-alveolar', 'fricative', 0, []) ),
+    SyllableComponentGenerator( 'coda', Rule('post-alveolar', 'fricative', 1, []) ),
+    # SyllableComponentGenerator( Rule('glottal', 'fricative', 3, []) ), # /h/
+    SyllableComponentGenerator( 'coda', Rule('bilabial', 'nasal', 3, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'nasal', 3, []) ),
+    SyllableComponentGenerator( 'coda', Rule('velar', 'nasal', 3, []) ),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3, []) ),
+    # SyllableComponentGenerator( Rule('palatal', 'approximant', 3, []) ), #/j/  (like in pure, cute, ...)
+    #SyllableComponentGenerator( [['velar', 'approximant', 3, []] ] ), #w
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'lateral', 3, []) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
                                Rule('any', 'plosive', 'any', []) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3,  []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'lateral', 3,  []), 
                                Rule('any', 'affricate', 'any', []) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
                                Rule('any', 'plosive', 'any', []) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
                                Rule('any', 'affricate', 'any', []) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'lateral', 3, []),
                                Rule('any', 'fricative', 'any', [216, 217]) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3,  []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3,  []), 
                                Rule('any', 'fricative', 'any', [216, 217]) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'lateral', 3, []), 
                                Rule('any', 'nasal', 'any', [220]) ),
 
     # -------  In rhotic varieties, /r/ + nasal or lateral: /rm/, /rn/, /rl/
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
                                Rule('any', 'nasal', 'any', [220]) ),
 
-    PClusterGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'approximant', 3, []), 
                                Rule('any', 'lateral', 'any', []) ),
     # ----------------------------------------------------------------------
 
     # ------- Nasal + homorganic stop or affricate: /mp/, /nt/, /nd/, /ntʃ/, /ndʒ/, /ŋk/
-    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    # SyllableComponentGenerator( Rule('any', 'nasal', 'any', [220]),
     #                    Rule('any', 'plosive', 'any', []) ),  ## homorganic?
     #
-    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    # SyllableComponentGenerator( Rule('any', 'nasal', 'any', [220]),
     #                    Rule('any', 'affricate', 'any', []) ),## homorganic?
 
     # /nt/, /nd/
-    PClusterGenerator( 'coda', Rule('alveolar', 'nasal', 'any', []),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'nasal', 'any', []),
                                Rule('alveolar', 'plosive', 'any', []) ),
 
-    PClusterGenerator( 'coda', Rule('bilabial', 'nasal', 'any', []),
+    SyllableComponentGenerator( 'coda', Rule('bilabial', 'nasal', 'any', []),
                                Rule('bilabial', 'plosive', 0, []) ),
     # ----------------------------------------------------------------------
 
     # ------- Nasal + fricative: /mf/, /mθ/, /nθ/, /ns/, /nz/, /ŋθ/ in some varieties
     # TODO - worth including?
-    # PClusterGenerator( Rule('any', 'nasal', 'any', [220]),
+    # SyllableComponentGenerator( Rule('any', 'nasal', 'any', [220]),
     #                    Rule('any', 'fricative', 'any', [216, 217]) ),
     #
     # ----------------------------------------------------------------------
 
     # ------- Voiceless fricative plus voiceless stop: /ft/, /sp/, /st/, /sk/
-    PClusterGenerator( 'coda', Rule('alveolar', 'fricative', 0, []),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'fricative', 0, []),
                                Rule('any', 'plosive', 0, []) ),
 
-    PClusterGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []),
+    SyllableComponentGenerator( 'coda', Rule('labio-dental', 'fricative', 0, []),
                                Rule('alveolar', 'plosive', 0, []) ),
     # ----------------------------------------------------------------------
 
     # ------- "Two voiceless stops: /pt/ , /kt/ ------- #
     # It appears as though only the above are valid, so this is being de-generalized for now
     # into the next two rules
-    #PClusterGenerator( Rule('any', 'plosive', 0, []),
+    #SyllableComponentGenerator( Rule('any', 'plosive', 0, []),
     #                   Rule('any', 'plosive', 0, []) ),
     # /pt/
-    PClusterGenerator( 'coda', Rule('bilabial', 'plosive', 0, []),
+    SyllableComponentGenerator( 'coda', Rule('bilabial', 'plosive', 0, []),
                                Rule('alveolar', 'plosive', 0, []) ),
     # /kt/
-    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []),
+    SyllableComponentGenerator( 'coda', Rule('velar', 'plosive', 0, []),
                                Rule('alveolar', 'plosive', 0, []) ),
     # ------- ------- ------- ------- ------- ------- ---
 
     # ------- "Stop plus voiceless fricative:  /pθ/, /ps/, /tθ/, /ts/, /dθ/, /ks/ ------- #
     # It looks like the below rule is too generalized; so this is being de-generalized for now
-    # PClusterGenerator( Rule('any', 'plosive', 'any', []),
+    # SyllableComponentGenerator( Rule('any', 'plosive', 'any', []),
     #                    Rule('any', 'fricative', 0, [216]) )
 
     # /pθ/, /ps/, /tθ/, /ts/
-    PClusterGenerator( 'coda', Rule('any', 'plosive', 0, [205]),
+    SyllableComponentGenerator( 'coda', Rule('any', 'plosive', 0, [205]),
                                Rule('any', 'fricative', 0, [209, 215]) ),
     # /ks/
-    PClusterGenerator( 'coda', Rule('velar', 'plosive', 0, []),
+    SyllableComponentGenerator( 'coda', Rule('velar', 'plosive', 0, []),
                                Rule('alveolar', 'fricative', 0, []) ),
     # /dθ/
-    PClusterGenerator( 'coda', Rule('alveolar', 'plosive', 1, []),
+    SyllableComponentGenerator( 'coda', Rule('alveolar', 'plosive', 1, []),
                                Rule('dental', 'fricative', 0, []) ),
 
 
-    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
-    PClusterGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
-    PClusterGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
-    PClusterGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
-    PClusterGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
-    PClusterGenerator( 'onset', Rule('bilabial', 'trill',     1, []) )  # B
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    # SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) )  # B
     ]
 
 
 EMPTY_CONSONANTS = [
     # Word-initial empty syllable onset
-    PCluster(cluster_loc='onset', consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
+    SyllableComponent(type_='onset', consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
     # Word-final empty syllable coda
-    PCluster(cluster_loc='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda')
+    SyllableComponent(type_='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda')
     ]
 
 

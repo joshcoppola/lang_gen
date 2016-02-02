@@ -2,6 +2,7 @@
 from __future__ import division
 import random
 from random import randint as roll
+from collections import namedtuple
 
 import itertools
 
@@ -56,6 +57,8 @@ LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE = 20
 LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
 
+# A data structure containing phoneme #s for different parts of the syllable
+Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 
 
 def chance(number):
@@ -425,8 +428,9 @@ class Language:
 
 
         print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Vowels'))
-        for row in itertools.izip_longest(*table_data, fillvalue=""):
+        for i, row in enumerate(itertools.izip_longest(*table_data, fillvalue="")):
             print("{: <12} {: <12} {: <12}".format(*row))
+            if i > 5: break
 
         print ''
 
@@ -455,7 +459,7 @@ if __name__ == '__main__':
     t = Language()
     t.generate_language_properties()
 
-    # t.info_dump()
+    t.info_dump()
     
     # print ' ---->', roll(1, 100), '<----'
     for i in xrange(12):
