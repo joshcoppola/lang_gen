@@ -62,36 +62,33 @@ class SyllableComponent:
     but many contain multiple phonemes. '''
     newid = itertools.count().next
 
-    def __init__(self, type_, consonant_array, rule_set):
+    def __init__(self, type_, phonemes, rule_set):
         self.id_ = SyllableComponent.newid()
-
+        # can be onset, coda, or nucleus
         self.type_ = type_
         
         # Contains the raw consonants
-        self.consonant_array = consonant_array
+        self.phonemes = phonemes
         # Contains the unique numbers for the consonants
-        self.consonant_id_array = [c.id_ for c in self.consonant_array]
+        self.phoneme_ids = tuple(p.id_ for p in self.phonemes)
 
         self.rule_set = rule_set
 
     def is_empty(self):
         ''' Use to see if this cluster is simply a empty phoneme placeholder '''
-        return self.consonant_array[0].id_ >= 300
+        return self.phonemes[0].id_ >= 300
 
     def is_complex(self):
-        return len(self.consonant_array) > 1
+        return len(self.phonemes) > 1
 
     def has_all_phonemes(self, phoneme_ids):
-        return all(phoneme_id in self.consonant_id_array for phoneme_id in phoneme_ids)
+        return all(phoneme_id in self.phoneme_ids for phoneme_id in phoneme_ids)
 
     def has_any_phoneme(self, phoneme_ids):
-        return any(phoneme_id in self.consonant_id_array for phoneme_id in phoneme_ids)
+        return any(phoneme_id in self.phoneme_ids for phoneme_id in phoneme_ids)
 
     def get_string(self):
-        cstr = ''
-        for phoneme in self.consonant_array:
-            cstr += phoneme.char
-        return cstr
+        return ''.join(p.char for p in self.phonemes)
 
 
 class SyllableComponentGenerator:
@@ -120,7 +117,7 @@ class SyllableComponentGenerator:
 
         # Filter out any cluster which contains repeated phonemes (Certain generalized rules can cause this to occur)
         # and create the actual phoneme cluster object from this.
-        all_permutations_worked = [SyllableComponent(self.type_, permutation, self.rule_set) for permutation in all_permutations
+        all_permutations_worked = [SyllableComponent(self.type_, tuple(permutation), self.rule_set) for permutation in all_permutations
                                      if all((phoneme_occurence == 1 for phoneme_occurence in Counter(permutation).values())) ]
 
         return all_permutations_worked        
@@ -214,11 +211,6 @@ CONSONANTS = [
     Consonant(223, 'w',  'velar',        'approximant', 3, '"w"'),
     Consonant(224, 'l',  'alveolar',     'lateral',     3, '"l"'),
 
-    # Empty word-initial onset
-    Consonant(300, '',   'onset',        'word-initial', 3, ''),
-    # Empty word-final coda
-    Consonant(301, '',   'coda',         'word-final',   3, ''),
-
     # Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
     # Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
     # Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
@@ -230,6 +222,13 @@ CONSONANTS = [
     # Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
     # Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"')          # B
     # Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
+
+    # _-_-_-_-_-_- These will represent places where consonants <could> go, but none actually exist  _-_-_-_-_-_
+
+    # Empty word-initial onset
+    Consonant(300, '',   'word-initial',   'onset',     3, ''),
+    # Empty word-final coda
+    Consonant(301, '',   'word-final',     'coda',      3, ''),
     ]
 
 # http://www.frathwiki.com/Coronal_consonant
@@ -285,8 +284,6 @@ VOWELS = [
     # lair   ɛɚ
     # lure   ʊɚ
 ]
-
-ID_TO_PHONEME = {phoneme.id_: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
 
 
 # A syllable onset is the consonant(s) which begin a syllable
@@ -490,20 +487,56 @@ POSSIBLE_CODAS =  [
     ]
 
 
-EMPTY_CONSONANTS = [
-    # Word-initial empty syllable onset
-    SyllableComponent(type_='onset', consonant_array=[ID_TO_PHONEME[300]], rule_set='empty word-initial onset'),
-    # Word-final empty syllable coda
-    SyllableComponent(type_='coda', consonant_array=[ID_TO_PHONEME[301]], rule_set='empty word-final coda')
-    ]
+class PhonemeData:
+    def __init__(self):
+
+
+        self.consonant_methods = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
+        self.consonant_locations = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 
+                                    'dental', 'glottal', 'palatal')
+
+        
+        self.id_to_component = {}
+
+        self.syllable_onsets = []
+        self.syllable_codas = []
+        self.syllable_nuclei = []
+
+        # Word-initial empty syllable onset
+        self.empty_onset = SyllableComponent(type_='onset', phonemes=tuple(c for c in CONSONANTS if c.id_==300), 
+                                             rule_set='empty word-initial onset')
+        # Word-final empty syllable coda
+        self.empty_coda =  SyllableComponent(type_='coda',  phonemes=tuple(c for c in CONSONANTS if c.id_==301), 
+                                             rule_set='empty word-final coda')
+
+        self.generate_data_structures()
+
+    def generate_data_structures(self):
+
+        ## Onsets ##
+        for onset_rules in POSSIBLE_ONSETS:
+            for onset in onset_rules.generate():
+                self.syllable_onsets.append(onset)
+                self.id_to_component[onset.id_] = onset
+        
+        ## Codas ##
+        for coda_rules in POSSIBLE_CODAS:
+            for coda in coda_rules.generate():
+                self.syllable_codas.append(coda)
+                self.id_to_component[coda.id_] = coda
+        
+        ## Vowels ##
+        # This is slightly different from Onets and Codas since vowels do not need a 
+        # SyllableComponentGenerator; thus the SyllableComponent definition is created here.
+        for vowel in VOWELS:
+            nucleus = SyllableComponent(type_='nucleus', phonemes=(vowel, ), rule_set='vowel')
+            self.syllable_nuclei.append(nucleus)
+            self.id_to_component[nucleus.id_] = nucleus
 
 
 
-ALL_ONSETS = [onset for onset_rules in POSSIBLE_ONSETS for onset in onset_rules.generate()]
-ALL_CODAS = [coda for coda_rules in POSSIBLE_CODAS for coda in coda_rules.generate()]
+data = PhonemeData()
 
-CONSONANT_METHODS = ('plosive', 'affricate', 'fricative', 'nasal', 'approximant', 'lateral')
-CONSONANT_LOCATIONS = ('bilabial', 'alveolar', 'velar', 'post-alveolar', 'labio-dental', 
-                        'dental', 'glottal', 'palatal')
+
 
 
