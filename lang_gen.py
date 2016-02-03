@@ -29,19 +29,24 @@ LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD = 15
 # Chance of dropping random consonant
 LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE = 80
 # If dropping a random consonant it triggered, how many to drop?
-LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
+LANGUAGE_DROP_RANDOM_CONSONANT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
+
+# LANGUAGE_SYLLABLE_STRUCTURE_CHANCES = {
+#     'no codas': 40,
+#     'no onsets': 20,
+#     'onsets and codas': 60
+# }
 
 # The chance that a particular language will forbid complex onsets
-DROP_COMPLEX_ONSETS_CHANCE = 10
-# The chance that a particular language will forbid complex codas, 
-# if it has not forbidden complex onsets
-DROP_COMPLEX_CODAS_CHANCE = 10
+DROP_COMPLEX_ONSETS_CHANCE = 35
+# The chance that a particular language will forbid complex codas 
+DROP_COMPLEX_CODAS_CHANCE = 35
 
 # This is the proportion of null onsets or codas that a language has in relation 
 # to all other onsets. A multiplier of 1 means null onsets occur 50% of the time
 # and a multiplier of .1 means null onsets occur 10% of the time
-NO_ONSET_MULTIPLIERS = (0, .1, .5, 1, 1, 2, 5)
-NO_CODA_MULTIPLIERS  = (0, .1, .25, .5, .5, 1, 2)
+NO_ONSET_MULTIPLIERS = (.25, .5, 1, 1, 2, 5)
+NO_CODA_MULTIPLIERS  = (.25, .5, .5, 1, 2)
 
 # The chances of having a language restrict syllable onsets or codas by voicing
 ONSET_RESTRICT_VOICING_CHANCE = 15
@@ -116,7 +121,7 @@ class Language:
         if len(self.valid_consonants) >= LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD and \
                                          chance(LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE):
 
-            for i in xrange(random.choice(LANGUAGE_DROP_RANDOM_CONSONAT_AMOUNTS)):
+            for i in xrange(random.choice(LANGUAGE_DROP_RANDOM_CONSONANT_AMOUNTS)):
                 random_consonant = random.choice(tuple(self.valid_consonants))
                 self.valid_consonants.remove(random_consonant)
 
@@ -127,8 +132,7 @@ class Language:
 
         # Some languages have a chance of disallowing complex onsets or complex codas in their syllables
         self.properties['no_complex_onsets'] = 1 if chance(DROP_COMPLEX_ONSETS_CHANCE) else 0
-        self.properties['no_complex_codas']  = 1 if chance(DROP_COMPLEX_CODAS_CHANCE) and \
-                                                    not self.properties['no_complex_onsets'] else 0
+        self.properties['no_complex_codas']  = 1 if chance(DROP_COMPLEX_CODAS_CHANCE)  else 0
         # Chance of no onset / coda compared to other clusters (a multiplier of 1 means that this onset has a 50% chance
         #  of occuring relative to <any> other onset!
         self.properties['no_onset_multiplier'] = random.choice(NO_ONSET_MULTIPLIERS)
