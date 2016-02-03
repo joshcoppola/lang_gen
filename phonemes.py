@@ -502,6 +502,12 @@ class PhonemeData:
         self.syllable_codas = []
         self.syllable_nuclei = []
 
+        # Store just simple / complex onsets / codas
+        self.syllable_onsets_simple = []
+        self.syllable_onsets_complex = []
+        self.syllable_codas_simple = []
+        self.syllable_codas_complex = []
+
         # Word-initial empty syllable onset
         self.empty_onset = SyllableComponent(type_='onset', phonemes=tuple(c for c in CONSONANTS if c.id_==300), 
                                              rule_set='empty word-initial onset')
@@ -518,12 +524,18 @@ class PhonemeData:
             for onset in onset_rules.generate():
                 self.syllable_onsets.append(onset)
                 self.id_to_component[onset.id_] = onset
+
+                if not onset.is_complex():  self.syllable_onsets_simple.append(onset)
+                else:                       self.syllable_onsets_complex.append(onset)
         
         ## Codas ##
         for coda_rules in POSSIBLE_CODAS:
             for coda in coda_rules.generate():
                 self.syllable_codas.append(coda)
                 self.id_to_component[coda.id_] = coda
+
+                if not coda.is_complex():   self.syllable_codas_simple.append(coda)
+                else:                       self.syllable_codas_complex.append(coda)
         
         ## Vowels ##
         # This is slightly different from Onets and Codas since vowels do not need a 

@@ -82,8 +82,9 @@ class Language:
         self.properties = {}
 
         self.valid_consonants = set([c for c in p.CONSONANTS if c.id_ < 300])
-        self.onset_probabilities = {}
-        self.coda_probabilities = {}
+        
+        self.onset_probabilities = {'simple':{}, 'complex':{} 'none':{} }
+        self.coda_probabilities  = {'simple':{}, 'complex':{} 'none':{} }
 
         self.nuclei_probabilities = {}
 
@@ -183,29 +184,31 @@ class Language:
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['onset_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_onset_voicing_restriction'])
 
-        for onset in p.data.syllable_onsets:
-            # Can't allow the debug empty consonant, or onsets containing invalid consonants
-            if onset.is_empty() or not all(onset_consonant in self.valid_consonants for onset_consonant in onset.phonemes):
-                continue
+        for onset in p.data.syllable_onsets_simple:
+            if self.onset_is_valid_in_this_language(onset=onset):
+                self.onset_probabilities['simple'][onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
 
-            # No complex onsets if that flag has been set
-            elif self.properties['no_complex_onsets'] and onset.is_complex():
-                continue
+        for onset in p.data.syllable_onsets_complex:
+            if self.onset_is_valid_in_this_language(onset=onset):
+                self.onset_probabilities['complex'][onset] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)    
 
-            # If there is a voicing restriction, and the first consonant of the onset matches the restriction, discard the onset
-            elif self.properties['onset_voicing_restriction'] is not None and onset.phonemes[0] in invalid_consonants:
-                continue
 
-            # ------ Gauntlet has been run, this onset can now be added to the list ------ #
-            elif not onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
-            # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
-            elif onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
-            # ---------------------------------------------------------------------------- #
+        # probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
+        # self.onset_probabilities[p.data.empty_onset] = probability_of_no_onset
 
-        probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
-        self.onset_probabilities[p.data.empty_onset] = probability_of_no_onset
+
+    def onset_is_valid_in_this_language(self, onset):
+        # Can't allow the debug empty consonant, or onsets containing invalid consonants
+        if onset.is_empty() or not all(onset_consonant in self.valid_consonants for onset_consonant in onset.phonemes):
+            return 0
+        # No complex onsets if that flag has been set
+        elif self.properties['no_complex_onsets'] and onset.is_complex():
+            return 0
+        # If there is a voicing restriction, and the first consonant of the onset matches the restriction, discard the onset
+        elif self.properties['onset_voicing_restriction'] is not None and onset.phonemes[0] in invalid_consonants:
+            return 0
+
+        return 1
 
 
     def generate_valid_codas(self):
@@ -213,29 +216,31 @@ class Language:
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['coda_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_coda_voicing_restriction'])
 
-        for coda in p.data.syllable_codas:
-            # Can't allow the debug empty consonant, or codas containing invalid consonants
-            if coda.is_empty() or not all(coda_consonant in self.valid_consonants for coda_consonant in coda.phonemes):
-                continue
+        for coda in p.data.syllable_codas_simple:
+            if coda_is_valid_in_this_language(coda=coda):
+                self.coda_probabilities['simple'][coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
 
-            # No complex codas if that flag has been set
-            elif self.properties['no_complex_codas'] and coda.is_complex():
-                continue
+        for coda in p.data.syllable_codas_complex:
+            if coda_is_valid_in_this_language(coda=coda):
+                self.coda_probabilities['complex'][coda] int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
 
-            # If there is a voicing restriction, and the last consonant of the coda matches the restriction, discard the coda
-            elif self.properties['coda_voicing_restriction'] is not None and coda.phonemes[-1] in invalid_consonants:
-                continue
 
-            # ------ Gauntlet has been run, this coda can now be added to the list ------ #
-            elif not coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
-            # Complex codas have a much smaller chance of appearing, partially because there's so many of them
-            elif coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
-            # ---------------------------------------------------------------------------- #
+        # probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
+        # self.coda_probabilities[p.data.empty_coda] = probability_of_no_coda
 
-        probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
-        self.coda_probabilities[p.data.empty_coda] = probability_of_no_coda
+
+    def coda_is_valid_in_this_language(self, coda):
+        # Can't allow the debug empty consonant, or codas containing invalid consonants
+        if coda.is_empty() or not all(coda_consonant in self.valid_consonants for coda_consonant in coda.phonemes):
+            return 0
+        # No complex codas if that flag has been set
+        elif self.properties['no_complex_codas'] and coda.is_complex():
+            return 0
+        # If there is a voicing restriction, and the last consonant of the coda matches the restriction, discard the coda
+        elif self.properties['coda_voicing_restriction'] is not None and coda.phonemes[-1] in invalid_consonants:
+            return 0
+
+        return 1
 
 
     def generate_valid_nuclei(self):
@@ -325,7 +330,7 @@ class Language:
         
         syllables = []
         # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
-        coda = None
+        coda, complex_components = None, None
 
         for i in xrange(number_of_syllables):            
             syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=number_of_syllables)
@@ -371,6 +376,15 @@ class Language:
 
             # If the onset has made it through the gauntlet, return it
             return onset
+
+    def choose_any_component(self, component_position):
+        self.syllable_type_of_component_probabilities['onset'] = {'simple':70, 'complex':20, 'none':10}
+
+        # Controls probability of getting either simple, complex, or nothing for syllable component
+        component_type = weighted_random(self.syllable_type_of_component_probabilities[component_type])
+        
+        # Take either the simple, complex, or random component and find the 
+        component = weighted_random(self.syllable_component_probabilities[component_position][component_type])
 
 
     def choose_valid_coda(self, onset, syllable_position):
