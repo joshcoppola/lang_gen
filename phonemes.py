@@ -74,6 +74,8 @@ class SyllableComponent:
 
         self.rule_set = rule_set
 
+        # print self.id_, self.type_, self.get_string(), self.rule_set
+
     def is_empty(self):
         ''' Use to see if this cluster is simply a empty phoneme placeholder '''
         return self.phonemes[0].id_ >= 300
@@ -325,7 +327,7 @@ POSSIBLE_ONSETS = [
     SyllableComponentGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
                                 Rule('any', 'approximant', 'any', [222, 223]) ),
 
-    SyllableComponentGenerator( 'onset', Rule('any', 'fricative', 0, [213, 216]),
+    SyllableComponentGenerator( 'onset', Rule('any', 'fricative', 0, [216]),
                                 Rule('any', 'lateral', 'any', [222, 223]) ),
     # ---------------------------------------------------------- #
 
@@ -467,9 +469,12 @@ POSSIBLE_CODAS =  [
     # SyllableComponentGenerator( Rule('any', 'plosive', 'any', []),
     #                    Rule('any', 'fricative', 0, [216]) )
 
-    # /pθ/, /ps/, /tθ/, /ts/
+    # /ps/, /ts/   -- NO /tθ/ because that looks weird
     SyllableComponentGenerator( 'coda', Rule('any', 'plosive', 0, [205]),
-                               Rule('any', 'fricative', 0, [209, 215]) ),
+                               Rule('any', 'fricative', 0, [209, 215, 211]) ),
+    # /pθ/
+    SyllableComponentGenerator( 'coda', Rule('any', 'plosive', 0, [205]),
+                               Rule('dental', 'fricative', 0, [209, 215]) ),
     # /ks/
     SyllableComponentGenerator( 'coda', Rule('velar', 'plosive', 0, []),
                                Rule('alveolar', 'fricative', 0, []) ),
