@@ -19,7 +19,7 @@ class Consonant:
     information about location, method, and voicing, as well as a 
     unique number, and an english letter that can correspond to the
     consonant. '''
-    def __init__(self, id_, char, location, method, voicing, description):
+    def __init__(self, id_, char, location, method, voicing, description, special=None):
         self.id_ = id_
         self.char = char
         self.location = location
@@ -27,8 +27,14 @@ class Consonant:
         self.voicing = voicing
         self.description = description
 
+        self.special = special
+
     def info(self):
         print 'Consonant {0} {1} {2} {3}'.format(self.id_, self.location, self.method, self.voicing)
+
+    def is_english(self):
+        ''' IDs are hardcoded, anything less than 224 is native english '''
+        return self.id_ <= 224
 
 class Vowel:
     def __init__(self, id_, char, position, manner, lips, description):
@@ -52,8 +58,9 @@ class Vowel:
     def info(self):
         print 'Vowel {0} {1}'.format(self.id_, self.char)
 
-    def get_string(self):
-        return self.char
+    def is_english(self):
+        ''' IDs are hardcoded, anything less than 115 is native english '''
+        return self.id_ <= 114
 
 
 class SyllableComponent:
@@ -203,7 +210,7 @@ CONSONANTS = [
     Consonant(213, 's',  'alveolar',     'fricative',   0, '"s"'),
     Consonant(214, 'z',  'alveolar',     'fricative',   1, '"z"'),
     Consonant(215, 'sh', 'post-alveolar','fricative',   0, '"sh", as in "shore"'),
-    # Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
+    Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
     Consonant(217, 'h',  'glottal',      'fricative',   3, '"h"'),
     Consonant(218, 'm',  'bilabial',     'nasal',       3, '"m"'),
     Consonant(219, 'n',  'alveolar',     'nasal',       3, '"n"'),
@@ -213,17 +220,24 @@ CONSONANTS = [
     Consonant(223, 'w',  'velar',        'approximant', 3, '"w"'),
     Consonant(224, 'l',  'alveolar',     'lateral',     3, '"l"'),
 
-    # Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
-    # Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
-    # Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
-    # Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
-    # Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
-    # Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
-    # Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
-    # Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
-    # Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
-    # Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"')          # B
+    Consonant(230, 'kn',  'palatal',    'nasal',        0, '"ny" sound'),           # ɲ̊
+    Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
+    Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
+    Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
+    Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
+    Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
+    Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
+    Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
+    Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
+    Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"'),          # B
     # Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
+
+    Consonant(251, 'p^',  'bilabial',     'plosive',     0, '"p"',                       special='aspirated'),
+    Consonant(252, 'b^',  'bilabial',     'plosive',     1, '"b"',                       special='aspirated'),
+    Consonant(253, 't^',  'alveolar',     'plosive',     0, '"t"',                       special='aspirated'),
+    Consonant(254, 'd^',  'alveolar',     'plosive',     1, '"d"',                       special='aspirated'),
+    Consonant(255, 'k^',  'velar',        'plosive',     0, '"k"',                       special='aspirated'),
+    Consonant(256, 'g^',  'velar',        'plosive',     1, 'hard "g", as in "girl"',    special='aspirated'),
 
     # _-_-_-_-_-_- These will represent places where consonants <could> go, but none actually exist  _-_-_-_-_-_
 
@@ -351,17 +365,17 @@ POSSIBLE_ONSETS = [
     #                    Rule('any', 'lateral', 'any', [222, 223]) )
     # ---------------------------------------------------------- #
     
-    # SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     0, []) ),  # ɲ̊
-    # SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     1, []) ),  # ɲ
-    # SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      0, []) ),  # c
-    # SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      1, []) ),  # ɟ
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
-    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
-    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
-    # SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) ),  # B
-    # SyllableComponentGenerator( 'onset', Rule('glottal',  'stop',      0, []) )   # ʔ
+    SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     0, []) ),  # ɲ̊
+    SyllableComponentGenerator( 'onset', Rule('palatal',  'nasal',     1, []) ),  # ɲ
+    SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      0, []) ),  # c
+    SyllableComponentGenerator( 'onset', Rule('palatal',  'stop',      1, []) ),  # ɟ
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) ),  # B
+    SyllableComponentGenerator( 'onset', Rule('glottal',  'stop',      0, []) )   # ʔ
     ]
 
 
@@ -483,12 +497,12 @@ POSSIBLE_CODAS =  [
                                Rule('dental', 'fricative', 0, []) ),
 
 
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
-    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
-    # SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
-    # SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
-    # SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) )  # B
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 0, []) ),  # ts
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'affricate', 1, []) ),  # dz
+    SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 0, []) ),  # x
+    SyllableComponentGenerator( 'onset', Rule('velar',    'fricative', 1, []) ),  # ɣ
+    SyllableComponentGenerator( 'onset', Rule('alveolar', 'trill',     1, []) ),  # r
+    SyllableComponentGenerator( 'onset', Rule('bilabial', 'trill',     1, []) )  # B
     ]
 
 

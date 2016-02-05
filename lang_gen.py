@@ -37,6 +37,20 @@ LANGUAGE_DROP_RANDOM_CONSONANT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
 #     'onsets and codas': 60
 # }
 
+# What types of plosive can exist in the language
+LANGUAGE_PLOSIVE_TYPES = {
+    'unaspirated': 50,
+    'aspirated': 35,
+    'aspirated and unaspirated': 25
+}
+
+# Chance of dropping all non-english phonemes
+LANGUAGE_FORCE_ENGLISH_PHONEMES_CHANCE = 25
+# If language has not forced english phonemes only, it will pick one of 
+# these percentages of non-english phonemes to drop 
+LANGUAGE_DROP_NON_ENGLISH_PHONEME_CHANCES = (25, 50, 75, 90, 90)
+
+
 # The chance that a particular language will forbid complex onsets
 DROP_COMPLEX_ONSETS_CHANCE = 35
 # The chance that a particular language will forbid complex codas 
@@ -125,6 +139,43 @@ class Language:
             self.drop_consonants(voicing=voicings)
         else:
             self.properties['language_voicing_restriction'] = None
+
+
+        # Figure out if this language distinguishes between aspirated / unaspirated plosives
+        plosive_types = weighted_random(LANGUAGE_PLOSIVE_TYPES)
+        if      plosive_types == 'unaspirated': self.drop_consonants(method='plosive', special='aspirated')
+        elif    plosive_types == 'aspirated':   self.drop_consonants(method='plosive', special=None)
+        elif    plosive_types == 'aspirated and unaspirated': pass
+        self.properties['plosive_types'] = plosive_types
+        self.log.append('Allow {0} plosives'.format(plosive_types))
+
+        
+        # ------------------- Figure out which non-english phonemes to drop ------------------- #
+
+        self.properties['non_english_phoneme_chances'] = None
+        non_english_phonemes = [c for c in self.valid_consonants if not c.is_english()]
+
+        # Chance of forcing only english phonemes (so, drop all non-english ones)
+        if chance(LANGUAGE_FORCE_ENGLISH_PHONEMES_CHANCE):
+            self.properties['non_english_phoneme_chances'] = 0
+            self.log.append("All phonemes must be English")
+            # Actually drop the phonemes
+            for c in non_english_phonemes:
+                self.valid_consonants.remove(c)
+
+        # Otherwise, a language gets a random rate of dropping a non-english phoneme,
+        # and then will go through and drop non-english phonemes at that rate
+        else:
+            drop_non_english_phoneme_chance = random.choice(LANGUAGE_DROP_NON_ENGLISH_PHONEME_CHANCES)
+            self.properties['non_english_phoneme_chances'] = 100 - drop_non_english_phoneme_chance
+            self.log.append("{0}% chance of dropping non-english phonemes".format(drop_non_english_phoneme_chance))
+            # Actually drop the phonemes
+            for c in non_english_phonemes:
+                if chance(drop_non_english_phoneme_chance):
+                    self.valid_consonants.remove(c)
+
+        # ------------------------------------------------------------------------------------- #
+
 
         # There is a chance for one or more random consonants to be removed as well
         if len(self.valid_consonants) >= LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD and \
@@ -342,12 +393,13 @@ class Language:
         return 'Syllable {0}s {1}, and {2}'.format(syllable_part, complexity_description, voicing_description)
 
 
-    def get_matching_consonants(self, location='any', method='any', voicing='any', exclude_matches=0):
+    def get_matching_consonants(self, location='any', method='any', voicing='any', special='any', exclude_matches=0):
         ''' Given a set of parameters, return an array of consonants that match the parameters '''
         matches = [c for c in self.valid_consonants 
                     if  (location == c.location or location == 'any') 
                     and (method   == c.method   or method   == 'any') 
-                    and (voicing  == c.voicing  or voicing  == 'any') ]
+                    and (voicing  == c.voicing  or voicing  == 'any')
+                    and (special  == c.special  or special  == 'any') ]
         # exclude_matches as basically "not" - if that option is toggled on, build a new list of all 
         # results which didn't match the query. 
         if not exclude_matches: query_result = matches  
@@ -355,9 +407,9 @@ class Language:
 
         return query_result
 
-    def drop_consonants(self, location='any', method='any', voicing='any'):
+    def drop_consonants(self, location='any', method='any', voicing='any', special='any'):
         ''' Remove a set of consonants matching certain parameters from this language ''' 
-        for consonant in self.get_matching_consonants(location=location, method=method, voicing=voicing):
+        for consonant in self.get_matching_consonants(location=location, method=method, voicing=voicing, special=special):
             self.valid_consonants.remove(consonant)
 
 
