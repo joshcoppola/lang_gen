@@ -281,7 +281,7 @@ VOWELS = [
     Vowel(id_=101, char='i',  position=( (0, 7), ),  manner='lax',   lips='unrounded', description='short "i", as in "sit"'),     # /ɪ/
     Vowel(id_=102, char='e',  position=( (0, 9), ),  manner='tense', lips='unrounded', description='long "e", as in "see"'),      # /i(ː)/
     Vowel(id_=103, char='u',  position=( (5, 2), ),  manner='lax',   lips='unrounded', description='short "u", as in "up"'),      # /ʌ/
-    Vowel(id_=114, char='e',  position=( (0, 5), ),  manner='lax',   lips='unrounded', description='short "e", as in "beg"'),     # /ɛ/
+    Vowel(id_=104, char='e',  position=( (0, 5), ),  manner='lax',   lips='unrounded', description='short "e", as in "beg"'),     # /ɛ/
     Vowel(id_=105, char='a',  position=( (0, 2), ),  manner='lax',   lips='unrounded', description='short "a", as in "bad"'),     # /æ/
     Vowel(id_=107, char='aa', position=( (9, 1), ),  manner='tense', lips='unrounded', description='flat "a", as in "ah"'),       # /ɑ/
     Vowel(id_=110, char='oo', position=( (9, 7), ),  manner='lax',   lips='rounded',   description='short "u", as in "put"'),     # /ʊ/
