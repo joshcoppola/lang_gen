@@ -77,6 +77,14 @@ LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
 LANGUAGE_MIN_NUM_VOWELS = 4
 
+# -- For complex syllable components, their probability is reduced by these amounts -- #
+COMPLEX_ONSET_PROBABILITY_MULTIPLIER = .2
+
+COMPLEX_CODA_PROBABILITY_MULTIPLIER = .2
+
+DIPHTHONG_PROBABILITY_MULTIPLIER = .35
+
+
 def chance(number):
     ''' A simple function for automating a chance (out of 100) of something happening '''
     return roll(1, 100) <= number
@@ -262,12 +270,8 @@ class Language:
                 continue
 
             # ------ Gauntlet has been run, this onset can now be added to the list ------ #
-            elif not onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
-            # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
-            elif onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 5) #roll(20, 35)
-            # ---------------------------------------------------------------------------- #
+            self.onset_probabilities[onset] = self.get_component_probability(component_type='onset', component=onset)
+            
 
         probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
         self.onset_probabilities[p.data.empty_onset] = probability_of_no_onset
@@ -292,12 +296,8 @@ class Language:
                 continue
 
             # ------ Gauntlet has been run, this coda can now be added to the list ------ #
-            elif not coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
-            # Complex codas have a much smaller chance of appearing, partially because there's so many of them
-            elif coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 5) #roll(20, 35)
-            # ---------------------------------------------------------------------------- #
+            self.coda_probabilities[coda] = self.get_component_probability(component_type='coda', component=coda)
+
 
         probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
         self.coda_probabilities[p.data.empty_coda] = probability_of_no_coda
@@ -335,9 +335,7 @@ class Language:
             if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
                 continue
 
-            # Diphthongs have less chance of occuring as regular vowels
-            if not vowel.is_diphthong():    self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2))
-            else:                           self.nuclei_probabilities[nucleus] = int(random.lognormvariate(3, 1.2) / 2) 
+            self.nuclei_probabilities[nucleus] = self.get_component_probability(component_type='nucleus', component=nucleus)
 
         # -------- Cleanup - ensure a language has at least LANGUAGE_MIN_NUM_VOWELS vowels ------------ #
 
@@ -346,9 +344,7 @@ class Language:
         while len(self.nuclei_probabilities) < LANGUAGE_MIN_NUM_VOWELS:
             random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
             if random_new_nucleus not in self.nuclei_probabilities:
-                # Diphthongs have less chance of occuring as regular vowels
-                if not vowel.is_diphthong():    self.nuclei_probabilities[random_new_nucleus] = int(random.lognormvariate(3, 1.2))
-                else:                           self.nuclei_probabilities[random_new_nucleus] = int(random.lognormvariate(3, 1.2) / 2) 
+                self.nuclei_probabilities[nucleus] = self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
 
         
         # -------- Cleanup - ensure a diphthong does not occur as the most probable vowel type ------------ #
@@ -380,6 +376,29 @@ class Language:
                                                             if not nucleus.phonemes[0].is_diphthong() }
 
         # ---------------------------------------- End Cleanup --------------------------------------------- #
+
+
+    def get_component_probability(self, component_type, component):
+        ''' Once a syllable component (onset, coda, or nucleus) has been generated and needs to be 
+            added to the language, this method handles generating the probability and adding it '''
+
+        # ------------------------------ Onset ------------------------------ #
+        if component_type == 'onset':
+            if not component.is_complex():  return int(random.lognormvariate(3, 1.2)) 
+            elif   component.is_complex():  return int(random.lognormvariate(3, 1.2) * COMPLEX_ONSET_PROBABILITY_MULTIPLIER)
+
+        # ------------------------------ Coda ------------------------------- #
+        elif component_type == 'coda':
+            if not component.is_complex():  return int(random.lognormvariate(3, 1.2))
+            elif   component.is_complex():  return int(random.lognormvariate(3, 1.2) * COMPLEX_CODA_PROBABILITY_MULTIPLIER)
+
+        # ------------------------------ Nucleus ----------------------------- #
+        elif component_type == 'nucleus':
+            vowel = component.phonemes[0]
+            
+            if not vowel.is_diphthong():    return int(random.lognormvariate(3, 1.2))
+            else:                           return int(random.lognormvariate(3, 1.2) * DIPHTHONG_PROBABILITY_MULTIPLIER)
+
 
     def describe_syllable_level_rules(self, syllable_part, no_complex, voicing_restriction, voicing_restriction_exclusion):
         ''' Placeholder function to describe syllable-level phonemic restrictions '''
