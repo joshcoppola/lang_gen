@@ -108,7 +108,7 @@ class Language:
         self.nuclei_with_monophthong_probabilities = {}
 
         self.vocabulary = {}
-        self.orthography = orthography.Orthography()
+        self.orthography = None
 
         # Log some of the rules that get flagged for this language
         self.log = []
@@ -238,6 +238,11 @@ class Language:
         self.log.append( 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.nuclei_probabilities)) )
 
 
+        ## -------------------------- Set orthography -------------------------------- ##
+
+        self.orthography = orthography.Orthography(parent_language=self)
+
+
     def generate_valid_onsets(self):
         ''' Contains some logic for choosing valid onsets for a language, by picking systematic features to disallow '''
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['onset_voicing_restriction'],
@@ -261,7 +266,7 @@ class Language:
                 self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex onsets have a much smaller chance of appearing, partially because there's so many of them
             elif onset.is_complex():
-                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
+                self.onset_probabilities[onset] = int(random.lognormvariate(3, 1.2) / 5) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
@@ -291,7 +296,7 @@ class Language:
                 self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2)) #roll(75, 200)
             # Complex codas have a much smaller chance of appearing, partially because there's so many of them
             elif coda.is_complex():
-                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 3) #roll(20, 35)
+                self.coda_probabilities[coda] = int(random.lognormvariate(3, 1.2) / 5) #roll(20, 35)
             # ---------------------------------------------------------------------------- #
 
         probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
@@ -523,15 +528,11 @@ class Language:
             1   = middle
             2   = final
         '''
-        # Only 1 syllable in the word
-        if total_syllables == 1:    return -1
-        # On the first syllable
-        elif current_syllable == 0: return 0
-        # On the last syllable
+        if   total_syllables == 1:  return -1   # Only 1 syllable in the word
+        elif current_syllable == 0: return 0    # On the first syllable
         elif current_syllable == \
-             total_syllables - 1:   return 2
-        # Otherwise, it's in the middle
-        else:                       return 1
+             total_syllables - 1:   return 2    # On the last syllable
+        else:                       return 1    # Otherwise, it's in the middle
 
 
     def info_dump(self):
@@ -588,7 +589,9 @@ if __name__ == '__main__':
     t.generate_language_properties()
 
     t.info_dump()
-    
+
+    # t.orthography.get_alphabet()
+
     # print ' ---->', roll(1, 100), '<----'
     for i in xrange(12):
         print '{: <14} {: <14} {: <14}'.format(t.create_word(number_of_syllables=1),
