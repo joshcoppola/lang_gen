@@ -370,7 +370,7 @@ class Orthography:
 
         # Go through each phonoeme id in the sequence and find the glyph
         for i, phoneme_id in enumerate(phoneme_sequence):
-            glyph = PHONEMES_WRITTEN[phoneme_id]
+            glyph = self.mapping[phoneme_id]
 
             is_before_consonant = self.phoneme_is_before_consonant(phoneme_sequence, i)
             is_after_consonant  = self.phoneme_is_after_consonant(phoneme_sequence, i)
