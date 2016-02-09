@@ -344,7 +344,7 @@ class Language:
         while len(self.nuclei_probabilities) < LANGUAGE_MIN_NUM_VOWELS:
             random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
             if random_new_nucleus not in self.nuclei_probabilities:
-                self.nuclei_probabilities[nucleus] = self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
+                self.nuclei_probabilities[random_new_nucleus] = self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
 
         
         # -------- Cleanup - ensure a diphthong does not occur as the most probable vowel type ------------ #
