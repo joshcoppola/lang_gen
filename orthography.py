@@ -290,6 +290,12 @@ class Orthography:
         if chance(25):
             self.mapping[212] = Glyph(212, 'dh') # th
 
+        # Chance of language putting placeholders where missing onsets / codas go
+        if chance(10):
+            # (300 and 301 are special - used at syllable onsets which don't start with
+            # a consonant and syllable codas which don't end with a consonant, respectively
+            self.mapping[300] = Glyph(300, '-', before_consonant='', at_beginning='', at_end='') 
+            self.mapping[301] = Glyph(301, '-', before_consonant='', at_beginning='', at_end='') 
 
         ## ------------------ Vowels -------------------- ##
 
