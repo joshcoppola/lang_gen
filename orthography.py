@@ -132,18 +132,26 @@ SYMB_TO_CAPITAL = {
 
 
 class Glyph:
-    def __init__(self, phoneme_id, normal, after_consonant):
+    def __init__(self, phoneme_id, normal, before_consonant=None, after_consonant=None, at_beginning=None, at_end=None):
         self.phoneme_id = phoneme_id
 
         self.normal = normal
-        self.after_consonant = after_consonant
 
-    def get_glyph(self, after_consonant):
-        if after_consonant:
-            return self.after_consonant
+        # The glyph can change depending on its position in the word; this setup handles that
+        self.before_consonant = before_consonant if before_consonant is not None else normal
+        self.after_consonant  = after_consonant  if after_consonant  is not None else normal
+        self.at_beginning     = at_beginning     if at_beginning     is not None else normal
+        self.at_end           = at_end           if at_end           is not None else normal
 
-        else:
-            return self.normal
+         
+
+    def get_glyph(self, before_consonant, after_consonant, at_beginning, at_end):
+        ''' Get glyph depending on position in the word '''
+        if   before_consonant:  return self.before_consonant
+        elif after_consonant:   return self.after_consonant
+        elif at_beginning:      return self.at_beginning
+        elif at_end:            return self.at_end 
+        else:                   return self.normal
 
 
 
@@ -154,72 +162,72 @@ PHONEMES_WRITTEN = {
 
     # ----------- VOWELS ----------- #
 
-    101: Glyph(101, 'i',  'i' ), # sit
-    102: Glyph(102, 'e',  'e' ), # see      'ea'
-    103: Glyph(103, 'u',  'u' ), # up
-    104: Glyph(104, 'e',  'e' ), # beg
-    105: Glyph(105, 'a',  'a' ), # bad
-    106: Glyph(106, 'a',  'a' ), # sundae   'ae'
-    107: Glyph(107, 'a',  'a' ), # Saab     'aa'
-    108: Glyph(108, 'i',  'i' ), # pie      'ie'
-    109: Glyph(109, 'o',  'o' ), # toe
-    110: Glyph(110, 'u',  'u' ), # good      'eu'  'eo'
-    111: Glyph(111, 'u',  'u' ), # blue      'ue'
-    112: Glyph(112, 'a',  'a' ), # saw
-    113: Glyph(113, 'ou', 'ou'), # out
-    114: Glyph(114, 'oi', 'oi'), # toil
+    101: Glyph(101, 'i'), # sit
+    102: Glyph(102, 'e'), # see      'ea'
+    103: Glyph(103, 'u'), # up
+    104: Glyph(104, 'e'), # beg
+    105: Glyph(105, 'a'), # bad
+    106: Glyph(106, 'a', at_end='ay'), # sundae   'ae'
+    107: Glyph(107, 'a'), # Saab     'aa'
+    108: Glyph(108, 'i', at_end='y'), # pie      'ie'
+    109: Glyph(109, 'o'), # toe
+    110: Glyph(110, 'u'), # good      'eu'  'eo'
+    111: Glyph(111, 'u'), # blue      'ue'
+    112: Glyph(112, 'a', at_end='aw'), # saw
+    113: Glyph(113, 'ou'), # out
+    114: Glyph(114, 'oi', at_end='oy'), # toil
 
-    115: Glyph(115, 'eo', 'eo'), # beorn
+    115: Glyph(115, 'eo'), # beorn
     
     # ----------- Consonants ----------- #
 
-    300: Glyph(300, '',   ''), # (300 and 301 are special - used at syllable onsets which don't start with
-    301: Glyph(301, '',   ''), # a consonant and syllable codas which don't end with a consonant, respectively
+    300: Glyph(300, ''), # (300 and 301 are special - used at syllable onsets which don't start with
+    301: Glyph(301, ''), # a consonant and syllable codas which don't end with a consonant, respectively
 
-    201: Glyph(201, 'p',  'p'),   #
-    202: Glyph(202, 'b',  'b'),   #
-    203: Glyph(203, 't',  't'),   #
-    204: Glyph(204, 'd',  'd'),   #
-    205: Glyph(205, 'k',  'k'),   # 'c'
-    206: Glyph(206, 'g',  'g'),   #
-    207: Glyph(207, 'ch', 'ch'),   # c_s
-    208: Glyph(208, 'j',  'j'),   # 'g'
-    209: Glyph(209, 'f',  'f'),   # 'ph'
-    210: Glyph(210, 'v',  'v'),
-    211: Glyph(211, 'th', 'th'),
-    212: Glyph(212, 'th', 'th'),   # dh
-    213: Glyph(213, 's',  's'),
-    214: Glyph(214, 'z',  'z'),
-    215: Glyph(215, 'sh', 'sh'),   # x,
-    216: Glyph(216, 'sh', 'sh'),   # x,
-    217: Glyph(217, 'h',  'h'),
-    218: Glyph(218, 'm',  'm'),   #
-    219: Glyph(219, 'n',  'n'),   #
-    220: Glyph(220, 'ng', 'ng'),   # chr(237) chr(238)
-    221: Glyph(221, 'r',  'r'),
-    222: Glyph(222, 'y',  'y'),
-    223: Glyph(223, 'w',  'w'),
-    224: Glyph(224, 'l',  'l'),
+    201: Glyph(201, 'p'),   #
+    202: Glyph(202, 'b'),   #
+    203: Glyph(203, 't'),   #
+    204: Glyph(204, 'd'),   #
+    205: Glyph(205, 'k'),   # 'c'
+    206: Glyph(206, 'g'),   #
+    207: Glyph(207, 'ch'),   # c_s
+    208: Glyph(208, 'j', at_end='ge'),   # 'g'
+    209: Glyph(209, 'f'),   # 'ph'
+    210: Glyph(210, 'v', at_end='ve'),
+    211: Glyph(211, 'th'),
+    212: Glyph(212, 'th'),   # dh
+    213: Glyph(213, 's'),
+    214: Glyph(214, 'z'),
+    215: Glyph(215, 'sh'),   # x,
+    216: Glyph(216, 'sh'),   # x,
+    217: Glyph(217, 'h'),
+    218: Glyph(218, 'm'),   #
+    219: Glyph(219, 'n'),   #
+    220: Glyph(220, 'ng'),   # chr(237) chr(238)
+    221: Glyph(221, 'r'),
+    222: Glyph(222, 'y'),
+    223: Glyph(223, 'w'),
+    224: Glyph(224, 'l'),
 
 
-    230: Glyph(230, n_s,  n_s),  # kn, cn
-    231: Glyph(231, n_s,  n_s),  # gn,
-    232: Glyph(232, 'cy', 'c'),  # c_s
-    233: Glyph(233, 'gy', 'g'),  # c_s
-    234: Glyph(234, 'ts', 's\''),
-    235: Glyph(235, 'dz', 'z\''),
-    236: Glyph(236, 'ch', 'h'),  # xh, ch, x c_s
-    237: Glyph(237, 'gh', 'h'),  # c_s
-    238: Glyph(238, 'r',  'r'),
-    239: Glyph(239, 'b',  'b'),
-    240: Glyph(240, '\'', '\''),
+    230: Glyph(230, n_s),  # kn, cn
+    231: Glyph(231, n_s),  # gn,
+    232: Glyph(232, 'cy', before_consonant='c'),  # c_s
+    233: Glyph(233, 'gy', before_consonant='g'),  # c_s
+    234: Glyph(234, 'ts', before_consonant='s\''),
+    235: Glyph(235, 'dz', before_consonant='z\''),
+    236: Glyph(236, 'ch', after_consonant='h'),  # xh, ch, x c_s
+    237: Glyph(237, 'gh', after_consonant='h'),  # c_s
+    238: Glyph(238, 'r'),
+    239: Glyph(239, 'b'),
+    240: Glyph(240, '\''),
 
-    251: Glyph(251, 'ph', 'p'), # p    p'
-    252: Glyph(252, 'bh', 'b'), # b    b'
-    253: Glyph(253, 'th', 't'), # t    t'
-    254: Glyph(254, 'dh', 'd'), # d    d'
-    255: Glyph(255, 'kh', 'k'), # k q  k'
-    256: Glyph(256, 'gh', 'g'), # g    g'
+    251: Glyph(251, 'ph', before_consonant='p'), # p    p'
+    252: Glyph(252, 'bh', before_consonant='b'), # b    b'
+    253: Glyph(253, 'th', before_consonant='t'), # t    t'
+    254: Glyph(254, 'dh', before_consonant='d'), # d    d'
+    255: Glyph(255, 'kh', before_consonant='k'), # k q  k'
+    256: Glyph(256, 'gh', before_consonant='g'), # g    g'
     }
 
 
@@ -249,38 +257,38 @@ class Orthography:
         # Potentially replace aspirated plosives with an apostrophe after it's name
         if chance(15):
             # used_apostrophe = 1
-            self.mapping[251] = Glyph(251, 'p\'', 'p')  # ph
-            self.mapping[252] = Glyph(252, 'b\'', 'b')  # bh
-            self.mapping[253] = Glyph(253, 't\'', 't')  # th
-            self.mapping[254] = Glyph(254, 'd\'', 'd')  # dh
-            self.mapping[255] = Glyph(255, 'k\'', 'k')  # kh
-            self.mapping[256] = Glyph(256, 'g\'', 'g')  # gh
+            self.mapping[251] = Glyph(251, 'p\'', before_consonant='p', at_end='p')  # ph
+            self.mapping[252] = Glyph(252, 'b\'', before_consonant='b', at_end='b')  # bh
+            self.mapping[253] = Glyph(253, 't\'', before_consonant='t', at_end='t')  # th
+            self.mapping[254] = Glyph(254, 'd\'', before_consonant='d', at_end='d')  # dh
+            self.mapping[255] = Glyph(255, 'k\'', before_consonant='k', at_end='k')  # kh
+            self.mapping[256] = Glyph(256, 'g\'', before_consonant='g', at_end='g')  # gh
 
         if 'c' in glyph_bank and chance(40):
             glyph_bank.remove('c')
-            self.mapping[205] = Glyph(205, 'c', 'c')
+            self.mapping[205] = Glyph(205, 'c')
 
         if chance(35):
-            self.mapping[230] = Glyph(230, 'kn', 'n') # cn
-            self.mapping[231] = Glyph(231, 'gn', 'n') #
+            self.mapping[230] = Glyph(230, 'kn', after_consonant='n') # cn
+            self.mapping[231] = Glyph(231, 'gn', after_consonant='n') #
 
         if chance(35):
-            self.mapping[232] = Glyph(232, c_s, c_s) #  cy
-            self.mapping[233] = Glyph(233, c_s, c_s) #  gy
+            self.mapping[232] = Glyph(232, c_s) #  cy
+            self.mapping[233] = Glyph(233, c_s) #  gy
 
         if chance(45):
-            self.mapping[236] = Glyph(236, 'x', 'h') # ch, x c_s  xh
+            self.mapping[236] = Glyph(236, 'x', after_consonant='h') # ch, x c_s  xh
         elif chance(35):
-            self.mapping[236] = Glyph(236, 'ch', 'h')
+            self.mapping[236] = Glyph(236, 'ch', after_consonant='h')
             # self.mapping[237] =  # c_s  gh
 
         if chance(25):
-            self.mapping[215] = Glyph(215, 'x', 'x')
-            self.mapping[216] = Glyph(216, 'x', 'x')
+            self.mapping[215] = Glyph(215, 'x')
+            self.mapping[216] = Glyph(216, 'x')
 
 
         if chance(25):
-            self.mapping[212] = Glyph(212, 'dh', 'dh') # th
+            self.mapping[212] = Glyph(212, 'dh') # th
 
 
         ## ------------------ Vowels -------------------- ##
@@ -343,23 +351,34 @@ class Orthography:
             print glyph
 
 
+    def phoneme_is_before_consonant(self, phoneme_sequence, current_index):
+        ''' Simple check if phoneme at an index is before a consonant '''
+        return (current_index < len(phoneme_sequence) - 1) and (200 <= phoneme_sequence[current_index + 1] <= 299)
+
     def phoneme_is_after_consonant(self, phoneme_sequence, current_index):
+        ''' Simple check if phoneme at an index is after a consonant ''' 
+        return current_index > 0 and 200 <= phoneme_sequence[current_index - 1] <= 299
 
-        if current_index > 0 and 200 <= phoneme_sequence[current_index-1] <= 299:
-            return 1
-
-        else:
-            return 0
+    def phoneme_is_at_end(self, phoneme_sequence, current_index):
+        ''' Simple check to see if phoneme is at the end of a word '''
+        return current_index == (len(phoneme_sequence) - 1)
 
     def phon_to_orth(self, phoneme_sequence):
-
+        ''' Convert a sequence of phoneme ids to a string, based on the orthography of this language '''
+        
         orth = ''
 
+        # Go through each phonoeme id in the sequence and find the glyph
         for i, phoneme_id in enumerate(phoneme_sequence):
             glyph = PHONEMES_WRITTEN[phoneme_id]
 
-            after_consonant = self.phoneme_is_after_consonant(phoneme_sequence=phoneme_sequence, current_index=i)
-            actual_glyph = glyph.get_glyph(after_consonant=after_consonant)
+            is_before_consonant = self.phoneme_is_before_consonant(phoneme_sequence, i)
+            is_after_consonant  = self.phoneme_is_after_consonant(phoneme_sequence, i)
+            is_beginning        = i == 0 # No need for a function to check whether this is the first phoneme
+            is_end              = self.phoneme_is_at_end(phoneme_sequence, i)           
+
+            # Grab the glyph, based on its position in the word
+            actual_glyph = glyph.get_glyph(is_before_consonant, is_after_consonant, is_beginning, is_end)
 
             orth += actual_glyph
 
