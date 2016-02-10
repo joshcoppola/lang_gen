@@ -3,6 +3,7 @@
 from __future__ import division
 from random import randint as roll
 import random
+from collections import defaultdict
 
 from lang_gen import weighted_random, chance
 
@@ -231,6 +232,12 @@ PHONEMES_WRITTEN = {
     256: Glyph(256, 'gh', before_consonant='g'), # g    g'
     }
 
+PHONEMES_BY_GLYPH = defaultdict(list)
+
+for phoneme_id, glyph in PHONEMES_WRITTEN.iteritems():
+    PHONEMES_BY_GLYPH[glyph.normal].append(phoneme_id)
+
+
 
 class Orthography:
     ''' Class to map phonemes to letters. Very shallow at the moment '''
@@ -242,7 +249,7 @@ class Orthography:
         # A list of languages which can be written in this orthography
         self.languages = []
 
-
+        self.syllable_division = None
 
         ## ------------------ Consonants -------------------- ##
 
@@ -255,8 +262,11 @@ class Orthography:
         # aspirated_plosives = self.parent_language.get_matching_consonants(method='plosive', special='aspirated')
         # unaspirated_plosives = self.parent_language.get_matching_consonants(method='plosive', special=None)
 
-        # Potentially replace aspirated plosives with an apostrophe after it's name
         if chance(15):
+            self.syllable_division = '-'
+
+        # Potentially replace aspirated plosives with an apostrophe after it's name
+        if chance(15) and not self.syllable_division:
             # used_apostrophe = 1
             self.mapping[251] = Glyph(251, 'p\'', before_consonant='p', at_end='p')  # ph
             self.mapping[252] = Glyph(252, 'b\'', before_consonant='b', at_end='b')  # bh
@@ -298,7 +308,7 @@ class Orthography:
             self.mapping[212] = Glyph(212, 'dh') # th
 
         # Chance of language putting placeholders where missing onsets / codas go
-        if chance(10):
+        if chance(10) and not self.syllable_division:
             # (300 and 301 are special - used at syllable onsets which don't start with
             # a consonant and syllable codas which don't end with a consonant, respectively
             self.mapping[300] = Glyph(300, '-', before_consonant='', at_beginning='', at_end='') 
@@ -307,7 +317,7 @@ class Orthography:
         # Chance to give some variation to the "r" letter
         if chance(35):
             self.mapping[221].at_beginning = 'rh'
-        if chance(25):
+        if chance(25) and not self.syllable_division:
             self.mapping[221].normal = 'rr'
 
         # Chance to give some variation to the "l" letter
@@ -315,17 +325,21 @@ class Orthography:
             self.mapping[224].at_beginning = 'lh'
         if chance(5):
             self.mapping[224].at_end = 'll'
-        if chance(15):
+        if chance(15 and not self.syllable_division):
             self.mapping[224].normal = 'll'
 
         # Some variation for the "m" and "n" letters
-        if chance(15):
+        if chance(15) and not self.syllable_division:
             self.mapping[218].normal = 'mm'
-        if chance(15):
+        if chance(15) and not self.syllable_division:
             self.mapping[219].normal = 'nn'
         
 
         ## ------------------ Vowels -------------------- ##
+
+
+
+
 
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
@@ -336,7 +350,6 @@ class Orthography:
             # Swap the 'y' consonant with a 'j'
             self.mapping[222] = Glyph(222, 'j')
             
-    
 
         # # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
         # if roll(0, 15) == 1:
@@ -350,44 +363,28 @@ class Orthography:
 
 
     def get_alphabet(self):
-
+        ''' Print out the alphabet for this language '''
         alphabet = sorted([glyph.normal for glyph in self.mapping.values()])
 
         for glyph in alphabet:
             print glyph
 
 
-    def phoneme_is_before_consonant(self, phoneme_sequence, current_index):
-        ''' Simple check if phoneme at an index is before a consonant '''
-        return (current_index < len(phoneme_sequence) - 1) and (200 <= phoneme_sequence[current_index + 1] <= 299)
-
-    def phoneme_is_after_consonant(self, phoneme_sequence, current_index):
-        ''' Simple check if phoneme at an index is after a consonant ''' 
-        return current_index > 0 and 200 <= phoneme_sequence[current_index - 1] <= 299
-
-    def phoneme_is_at_end(self, phoneme_sequence, current_index):
-        ''' Simple check to see if phoneme is at the end of a word '''
-        return current_index == (len(phoneme_sequence) - 1)
-
-    def phon_to_orth(self, phoneme_sequence):
+    def phon_to_orth(self, word):
         ''' Convert a sequence of phoneme ids to a string, based on the orthography of this language '''
-        
         orth = ''
 
         # Go through each phonoeme id in the sequence and find the glyph
-        for i, phoneme_id in enumerate(phoneme_sequence):
-            glyph = self.mapping[phoneme_id]
-
-            is_before_consonant = self.phoneme_is_before_consonant(phoneme_sequence, i)
-            is_after_consonant  = self.phoneme_is_after_consonant(phoneme_sequence, i)
-            is_beginning        = i == 0 # No need for a function to check whether this is the first phoneme
-            is_end              = self.phoneme_is_at_end(phoneme_sequence, i)           
+        for phoneme_index, (phoneme_id, component, is_boundary_between_syllables) in enumerate(word.get_phonemes()):
+            # Some orthographies put a boundary marker between syllables            
+            if self.syllable_division and is_boundary_between_syllables:
+                orth += self.syllable_division
 
             # Grab the glyph, based on its position in the word
-            actual_glyph = glyph.get_glyph(is_before_consonant, is_after_consonant, is_beginning, is_end)
-
-            orth += actual_glyph
-
+            orth += self.mapping[phoneme_id].get_glyph(   word.phoneme_is_before_consonant(phoneme_index), 
+                                                          word.phoneme_is_after_consonant(phoneme_index), 
+                                                          word.phoneme_is_at_beginning(phoneme_index), 
+                                                          word.phoneme_is_at_end(phoneme_index) )
 
         return orth
 
