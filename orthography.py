@@ -337,10 +337,6 @@ class Orthography:
 
         ## ------------------ Vowels -------------------- ##
 
-
-
-
-
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
         if chance(5):
