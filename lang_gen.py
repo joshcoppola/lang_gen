@@ -107,10 +107,8 @@ class Language:
         self.properties = {}
 
         self.valid_consonants = set([c for c in p.CONSONANTS if c.id_ < 300])
-        self.onset_probabilities = {}
-        self.coda_probabilities = {}
-
-        self.nuclei_probabilities = {}
+        self.probabilities = { 'onset': {}, 'coda':{}, 'nucleus':{} }
+        
         # Will be created at end of nucleus step - this will be used as a quick way to
         # generate monophthongs rather then potentially getting dipthongs later
         self.nuclei_with_monophthong_probabilities = {}
@@ -243,7 +241,7 @@ class Language:
         self.log.append( 'No onset mutiplier: {0}'.format(self.properties['no_onset_multiplier']) )
         self.log.append( 'No coda mutiplier: {0}'.format(self.properties['no_coda_multiplier']) )
 
-        self.log.append( 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.nuclei_probabilities)) )
+        self.log.append( 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.probabilities['nucleus'])) )
 
 
         ## -------------------------- Set orthography -------------------------------- ##
@@ -270,11 +268,11 @@ class Language:
                 continue
 
             # ------ Gauntlet has been run, this onset can now be added to the list ------ #
-            self.onset_probabilities[onset] = self.get_component_probability(component_type='onset', component=onset)
+            self.probabilities['onset'][onset] = self.get_component_probability(component_type='onset', component=onset)
             
 
-        probability_of_no_onset = int(sum(self.onset_probabilities.values()) * self.properties['no_onset_multiplier'])
-        self.onset_probabilities[p.data.empty_onset] = probability_of_no_onset
+        probability_of_no_onset = int(sum(self.probabilities['onset'].values()) * self.properties['no_onset_multiplier'])
+        self.probabilities['onset'][p.data.empty_onset] = probability_of_no_onset
 
 
     def generate_valid_codas(self):
@@ -296,11 +294,11 @@ class Language:
                 continue
 
             # ------ Gauntlet has been run, this coda can now be added to the list ------ #
-            self.coda_probabilities[coda] = self.get_component_probability(component_type='coda', component=coda)
+            self.probabilities['coda'][coda] = self.get_component_probability(component_type='coda', component=coda)
 
 
-        probability_of_no_coda = int(sum(self.coda_probabilities.values()) * self.properties['no_coda_multiplier'])
-        self.coda_probabilities[p.data.empty_coda] = probability_of_no_coda
+        probability_of_no_coda = int(sum(self.probabilities['coda'].values()) * self.properties['no_coda_multiplier'])
+        self.probabilities['coda'][p.data.empty_coda] = probability_of_no_coda
 
 
     def generate_valid_nuclei(self):
@@ -335,23 +333,23 @@ class Language:
             if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
                 continue
 
-            self.nuclei_probabilities[nucleus] = self.get_component_probability(component_type='nucleus', component=nucleus)
+            self.probabilities['nucleus'][nucleus] = self.get_component_probability(component_type='nucleus', component=nucleus)
 
         # -------- Cleanup - ensure a language has at least LANGUAGE_MIN_NUM_VOWELS vowels ------------ #
 
         # If somehow we've ended up with a ridiculously low number of vowels,
         # this loop ensures we'll be brought up to above 5 vowels total
-        while len(self.nuclei_probabilities) < LANGUAGE_MIN_NUM_VOWELS:
+        while len(self.probabilities['nucleus']) < LANGUAGE_MIN_NUM_VOWELS:
             random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
-            if random_new_nucleus not in self.nuclei_probabilities:
-                self.nuclei_probabilities[random_new_nucleus] = \
+            if random_new_nucleus not in self.probabilities['nucleus']:
+                self.probabilities['nucleus'][random_new_nucleus] = \
                                         self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
 
         
         # -------- Cleanup - ensure a diphthong does not occur as the most probable vowel type ------------ #
 
-        sorted_nuclei_probabilities = sorted([(self.nuclei_probabilities[nucleus], nucleus) 
-                                            for nucleus in self.nuclei_probabilities], reverse=True)
+        sorted_nuclei_probabilities = sorted([(self.probabilities['nucleus'][nucleus], nucleus) 
+                                            for nucleus in self.probabilities['nucleus']], reverse=True)
 
         most_probable_vowel_nucleus = sorted_nuclei_probabilities[0][1]
         # Find the first monophthong, which will be used to swap with the most probable vowel 
@@ -367,13 +365,13 @@ class Language:
         if most_probable_vowel_nucleus != most_probable_monophthong_nucleus:
             self.log.append( "Flipping {0} with {1}".format(most_probable_vowel_nucleus.get_string(), most_probable_monophthong_nucleus.get_string()) )
             # Flip the probabilities
-            self.nuclei_probabilities[most_probable_monophthong_nucleus], self.nuclei_probabilities[most_probable_vowel_nucleus] = \
-                self.nuclei_probabilities[most_probable_vowel_nucleus], self.nuclei_probabilities[most_probable_monophthong_nucleus]
+            self.probabilities['nucleus'][most_probable_monophthong_nucleus], self.probabilities['nucleus'][most_probable_vowel_nucleus] = \
+                self.probabilities['nucleus'][most_probable_vowel_nucleus], self.probabilities['nucleus'][most_probable_monophthong_nucleus]
 
         # ----------- Cleanup - Build a list of just nuclei with monophthongs for later use  --------------- #
 
-        self.nuclei_with_monophthong_probabilities = {nucleus: self.nuclei_probabilities[nucleus] 
-                                                        for nucleus in self.nuclei_probabilities 
+        self.nuclei_with_monophthong_probabilities = {nucleus: self.probabilities['nucleus'][nucleus] 
+                                                        for nucleus in self.probabilities['nucleus'] 
                                                             if not nucleus.phonemes[0].is_diphthong() }
 
         # ---------------------------------------- End Cleanup --------------------------------------------- #
@@ -466,7 +464,7 @@ class Language:
 
         # At the beginning of the word, any onset is valid
         if previous_coda is None:
-            return weighted_random(self.onset_probabilities)
+            return weighted_random(self.probabilities['onset'])
         # Otherwise, if the previous coda was complex, we'll assign an empty onset
         elif previous_coda.is_complex():
             return p.data.empty_onset
@@ -480,7 +478,7 @@ class Language:
 
         # Loop through and generate onsets until one matches all criteria
         while True:
-            onset = weighted_random(self.onset_probabilities)
+            onset = weighted_random(self.probabilities['onset'])
             # Can't start one syllable off with the same phoneme that the previous ended with
             if onset.phoneme_ids[-1] == previous_coda_last_phoneme:
                 continue
@@ -501,7 +499,7 @@ class Language:
 
         # Loop through until a valid coda is generated
         while True:
-            coda = weighted_random(self.coda_probabilities)
+            coda = weighted_random(self.probabilities['coda'])
             # No /l/ or /r/ in codas when the onset contains one of these
             if onset.has_any_phoneme( (221, 224) ) and coda.has_any_phoneme( (221, 224) ):
                 continue
@@ -527,7 +525,7 @@ class Language:
 
         while True:
             # Generate the vowel based off of the combined weighings of the vowels surrounding it
-            nucleus = weighted_random(self.nuclei_probabilities)
+            nucleus = weighted_random(self.probabilities['nucleus'])
             vowel = nucleus.phonemes[0]
 
             # A short vowel cannot occur if there is no consonant in the coda
@@ -554,29 +552,16 @@ class Language:
              total_syllables - 1:   return 2    # On the last syllable
         else:                       return 1    # Otherwise, it's in the middle
 
-    def is_common_syllable_component(self, syllable_component, phoneme_id, top_phoneme_level):
+    def is_common_syllable_component(self, target_syllable_component, phoneme_id, top_phoneme_level):
         ''' See if a syllable component is common in a language '''
 
-        if syllable_component == 'onset':
-            sorted_probabilities = sorted([(self.onset_probabilities[onset], onset) for onset in self.onset_probabilities], reverse=True)
-            for probability, onset in sorted_probabilities[0:top_phoneme_level+1]:
-                if onset.has_any_phoneme(phoneme_id):
-                    return 1
-            return 0
-
-        elif syllable_component == 'coda':
-            sorted_probabilities = sorted([(self.coda_probabilities[coda], coda) for coda in self.coda_probabilities], reverse=True)
-            for probability, coda in sorted_probabilities[0:top_phoneme_level+1]:
-                if coda.has_any_phoneme(phoneme_id):
-                    return 1
-            return 0
-
-        elif syllable_component == 'nucleus':
-            sorted_probabilities = sorted([(self.nuclei_probabilities[nucleus], nucleus) for nucleus in self.nucleus_probabilities], reverse=True)
-            for probability, nucleus in sorted_probabilities[0:top_phoneme_level+1]:
-                if nucleus.has_any_phoneme(phoneme_id):
-                    return 1
-            return 0
+        
+        sorted_probabilities = sorted([(self.probabilities[target_syllable_component][component], component) 
+                                            for component in self.probabilities[target_syllable_component]], reverse=True)
+        for probability, component in sorted_probabilities[0:top_phoneme_level+1]:
+            if component.has_any_phoneme(phoneme_id):
+                return 1
+        return 0
 
 
     def info_dump(self):
@@ -586,17 +571,11 @@ class Language:
 
         table_data = []
 
-        onset_probabilities = sorted(((self.onset_probabilities[cons], cons) 
-            for cons in self.onset_probabilities.keys()), reverse=True)
-        table_data.append('{0: >4} {1}'.format(perc, c.get_string()) for perc, c in onset_probabilities)
-
-        coda_probabilities = sorted(((self.coda_probabilities[cons], cons) 
-            for cons in self.coda_probabilities.keys()), reverse=True)
-        table_data.append('{0: >4} {1}'.format(perc, c.get_string()) for perc, c in coda_probabilities)
-
-        nuclei_probabilities = sorted(((self.nuclei_probabilities[v], v) 
-            for v in self.nuclei_probabilities.keys()), reverse=True)
-        table_data.append('{0: >4} {1}'.format(perc, v.get_string()) for perc, v in nuclei_probabilities)
+        for component in ('onset', 'coda', 'nucleus'):
+            probabilities = sorted(((self.probabilities[component][phoneme], phoneme) 
+                for phoneme in self.probabilities[component].keys()), reverse=True)
+            
+            table_data.append('{0: >4} {1}'.format(perc, phoneme.get_string()) for perc, phoneme in probabilities)
 
         # Print valid onsets, codas, and nuclei
         print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Nuclei'))
