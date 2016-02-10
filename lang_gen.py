@@ -16,39 +16,39 @@ This file generates languages which have distinct phonemes.
 '''
 
 # Chance of dropping an entire articulation method from the language
-LANGUAGE_DROP_ENTIRE_METHOD_CHANCE = 5
+DROP_ENTIRE_METHOD_CHANCE = 5
 # Chance of dropping an entire articulation location from the language
-LANGUAGE_DROP_ENTIRE_LOCATION_CHANCE = 10
+DROP_ENTIRE_LOCATION_CHANCE = 10
 # Chance of dropping "th" from the language
-LANGUAGE_DROP_DENTAL_CHANCE = 65
+DROP_DENTAL_CHANCE = 65
 # Chance of dropping an entire voicing method (voiced / unvoiced) from the language
-LANGUAGE_DROP_ENTIRE_VOICING_CHANCE = 5
+DROP_ENTIRE_VOICING_CHANCE = 5
 
 # Won't drop random consonants if fewer than this many consonants exist after the above
-LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD = 15
+DROP_RANDOM_CONSONANT_THRESHHOLD = 15
 # Chance of dropping random consonant
-LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE = 80
+DROP_RANDOM_CONSONANT_CHANCE = 80
 # If dropping a random consonant it triggered, how many to drop?
-LANGUAGE_DROP_RANDOM_CONSONANT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
+DROP_RANDOM_CONSONANT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
 
-# LANGUAGE_SYLLABLE_STRUCTURE_CHANCES = {
+# SYLLABLE_STRUCTURE_CHANCES = {
 #     'no codas': 40,
 #     'no onsets': 20,
 #     'onsets and codas': 60
 # }
 
 # What types of plosive can exist in the language
-LANGUAGE_PLOSIVE_TYPES = {
+PLOSIVE_TYPES = {
     'unaspirated': 50,
     'aspirated': 35,
     'aspirated and unaspirated': 25
 }
 
 # Chance of dropping all non-english phonemes
-LANGUAGE_FORCE_ENGLISH_PHONEMES_CHANCE = 25
+FORCE_ENGLISH_PHONEMES_CHANCE = 25
 # If language has not forced english phonemes only, it will pick one of 
 # these percentages of non-english phonemes to drop 
-LANGUAGE_DROP_NON_ENGLISH_PHONEME_CHANCES = (25, 50, 75, 90, 90)
+DROP_NON_ENGLISH_PHONEME_CHANCES = (25, 50, 75, 90, 90)
 
 
 # The chance that a particular language will forbid complex onsets
@@ -67,15 +67,15 @@ ONSET_RESTRICT_VOICING_CHANCE = 15
 CODA_RESTRICT_VOICING_CHANCE  = 15
 
 # The chance of dropping all diphthongs or dropping all lax monphthong vowels
-LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE = 25
-LANGUAGE_DROP_ALL_LAX_MONPHTHONGS_CHANCE = 20
+DROP_ALL_DIPHTHONGS_CHANCE = 25
+DROP_ALL_LAX_MONPHTHONGS_CHANCE = 20
 # The chance of dropping all rounded vowels
-LANGUAGE_DROP_ALL_ROUNDED_CHANCE = 10
+DROP_ALL_ROUNDED_CHANCE = 10
 # The chance of dropping random monophthongs / diphthongs
-LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE = 20
-LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE   = 40
+DROP_RANDOM_MONOPHTHONG_CHANCE = 20
+DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
-LANGUAGE_MIN_NUM_VOWELS = 4
+MIN_NUM_VOWELS = 4
 
 # -- For complex syllable components, their probability is reduced by these amounts -- #
 COMPLEX_ONSET_PROBABILITY_MULTIPLIER = .2
@@ -87,7 +87,7 @@ DIPHTHONG_PROBABILITY_MULTIPLIER = .35
 # This is the probability that an empty onset will be forced after a syllable with any coda
 # Otherwise, certain languages may have high probabilities of big multi-consonant clusters
 # which are valid but hard to read (especially in 3+ syllable words)
-LANGUAGE_FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 50
+FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 50
 
 
 def chance(number):
@@ -129,21 +129,21 @@ class Language:
             frequency at which they occur '''
         
         # ------------------------- Drop some phonemes at the language level ----------------------- #
-        if chance(LANGUAGE_DROP_ENTIRE_METHOD_CHANCE):
+        if chance(DROP_ENTIRE_METHOD_CHANCE):
             method = random.choice(p.data.consonant_methods)
             self.log.append('Dropping all {0}s'.format(method))
             self.drop_consonants(method=method)
 
-        if chance(LANGUAGE_DROP_DENTAL_CHANCE):
+        if chance(DROP_DENTAL_CHANCE):
             self.log.append('Dropping dentals')
             self.drop_consonants(location='dental')
 
-        if chance(LANGUAGE_DROP_ENTIRE_LOCATION_CHANCE):
+        if chance(DROP_ENTIRE_LOCATION_CHANCE):
             location = random.choice(p.data.consonant_locations)
             self.log.append('Dropping all {0}s'.format(location))
             self.drop_consonants(location=location)
 
-        if chance(LANGUAGE_DROP_ENTIRE_VOICING_CHANCE):
+        if chance(DROP_ENTIRE_VOICING_CHANCE):
             voicings = random.choice((0, 1))
             self.properties['language_voicing_restriction'] = voicings
             self.log.append('Dropping with voicing of {0}'.format(voicings))
@@ -153,7 +153,7 @@ class Language:
 
 
         # Figure out if this language distinguishes between aspirated / unaspirated plosives
-        plosive_types = weighted_random(LANGUAGE_PLOSIVE_TYPES)
+        plosive_types = weighted_random(PLOSIVE_TYPES)
         if      plosive_types == 'unaspirated': self.drop_consonants(method='plosive', special='aspirated')
         elif    plosive_types == 'aspirated':   self.drop_consonants(method='plosive', special=None)
         elif    plosive_types == 'aspirated and unaspirated': pass
@@ -167,7 +167,7 @@ class Language:
         non_english_phonemes = [c for c in self.valid_consonants if not c.is_english()]
 
         # Chance of forcing only english phonemes (so, drop all non-english ones)
-        if chance(LANGUAGE_FORCE_ENGLISH_PHONEMES_CHANCE):
+        if chance(FORCE_ENGLISH_PHONEMES_CHANCE):
             self.properties['non_english_phoneme_chances'] = 0
             self.log.append("All phonemes must be English")
             # Actually drop the phonemes
@@ -177,7 +177,7 @@ class Language:
         # Otherwise, a language gets a random rate of dropping a non-english phoneme,
         # and then will go through and drop non-english phonemes at that rate
         else:
-            drop_non_english_phoneme_chance = random.choice(LANGUAGE_DROP_NON_ENGLISH_PHONEME_CHANCES)
+            drop_non_english_phoneme_chance = random.choice(DROP_NON_ENGLISH_PHONEME_CHANCES)
             self.properties['non_english_phoneme_chances'] = 100 - drop_non_english_phoneme_chance
             self.log.append("{0}% chance of dropping non-english phonemes".format(drop_non_english_phoneme_chance))
             # Actually drop the phonemes
@@ -189,10 +189,10 @@ class Language:
 
 
         # There is a chance for one or more random consonants to be removed as well
-        if len(self.valid_consonants) >= LANGUAGE_DROP_RANDOM_CONSONANT_THRESHHOLD and \
-                                         chance(LANGUAGE_DROP_RANDOM_CONSONANT_CHANCE):
+        if len(self.valid_consonants) >= DROP_RANDOM_CONSONANT_THRESHHOLD and \
+                                         chance(DROP_RANDOM_CONSONANT_CHANCE):
 
-            for i in xrange(random.choice(LANGUAGE_DROP_RANDOM_CONSONANT_AMOUNTS)):
+            for i in xrange(random.choice(DROP_RANDOM_CONSONANT_AMOUNTS)):
                 random_consonant = random.choice(tuple(self.valid_consonants))
                 self.valid_consonants.remove(random_consonant)
 
@@ -310,13 +310,13 @@ class Language:
         ''' Contains some logic for choosing which vowels will be used in this language '''
 
         # -------- Set some initial parameters -------- #
-        drop_all_diphtongs = chance(LANGUAGE_DROP_ALL_DIPHTHONGS_CHANCE)
+        drop_all_diphtongs = chance(DROP_ALL_DIPHTHONGS_CHANCE)
 
-        if drop_all_diphtongs:  drop_all_lax_monophthongs = chance(LANGUAGE_DROP_ALL_LAX_MONPHTHONGS_CHANCE)
+        if drop_all_diphtongs:  drop_all_lax_monophthongs = chance(DROP_ALL_LAX_MONPHTHONGS_CHANCE)
         else:                   drop_all_lax_monophthongs = 0
 
         if not drop_all_diphtongs and \
-           not drop_all_lax_monophthongs: drop_all_rounded = chance(LANGUAGE_DROP_ALL_ROUNDED_CHANCE)
+           not drop_all_lax_monophthongs: drop_all_rounded = chance(DROP_ALL_ROUNDED_CHANCE)
         else:                             drop_all_rounded = 0
         # ------- End setting initial parameters ------- #
 
@@ -333,18 +333,18 @@ class Language:
                 continue
 
             # Drop random vowels
-            if not vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_MONOPHTHONG_CHANCE):
+            if not vowel.is_diphthong() and chance(DROP_RANDOM_MONOPHTHONG_CHANCE):
                 continue
-            if vowel.is_diphthong() and chance(LANGUAGE_DROP_RANDOM_DIPHTHONG_CHANCE):
+            if vowel.is_diphthong() and chance(DROP_RANDOM_DIPHTHONG_CHANCE):
                 continue
 
             self.probabilities['nucleus'][nucleus] = self.get_component_probability(component_type='nucleus', component=nucleus)
 
-        # -------- Cleanup - ensure a language has at least LANGUAGE_MIN_NUM_VOWELS vowels ------------ #
+        # -------- Cleanup - ensure a language has at least MIN_NUM_VOWELS vowels ------------ #
 
         # If somehow we've ended up with a ridiculously low number of vowels,
         # this loop ensures we'll be brought up to above 5 vowels total
-        while len(self.probabilities['nucleus']) < LANGUAGE_MIN_NUM_VOWELS:
+        while len(self.probabilities['nucleus']) < MIN_NUM_VOWELS:
             random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
             if random_new_nucleus not in self.probabilities['nucleus']:
                 self.probabilities['nucleus'][random_new_nucleus] = \
@@ -478,7 +478,7 @@ class Language:
             return p.data.empty_onset
         # If this onset follows a coda (even a simple one), there is a chance that we'll ignore the
         # force an empty onset - this helps with readability, especially in longer words
-        elif not previous_coda.is_empty() and chance(LANGUAGE_FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE):
+        elif not previous_coda.is_empty() and chance(FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE):
             return p.data.empty_onset
 
         # Otherwise, generate an onset with some restrictions
