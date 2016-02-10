@@ -87,7 +87,7 @@ DIPHTHONG_PROBABILITY_MULTIPLIER = .35
 # This is the probability that an empty onset will be forced after a syllable with any coda
 # Otherwise, certain languages may have high probabilities of big multi-consonant clusters
 # which are valid but hard to read (especially in 3+ syllable words)
-FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 50
+FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 35
 
 
 def chance(number):
@@ -107,11 +107,48 @@ class Word:
                                 for component in syllable
                                     for phoneme_id in component)
 
+    def __len__(self):
+        return len(self.phoneme_ids)
+
+    def get_phonemes(self):
+        ''' A generator which returns the phoneme id and position within the syllable
+            for all phonemes in the word, in addition to the syllable component and whether
+            or not this particular position is at a boundary between syllables '''
+        for syllable_number, syllable in enumerate(self.syllables):
+            # Each component in the syllable has one or more phoneme ids
+            for component_index, phoneme_ids in enumerate(syllable):
+                # A syllable component can have more than one phoneme (/spr/, /rt/, etc)
+                for phoneme_position_within_component, phoneme_id in enumerate(phoneme_ids):
+                    # If this isn't the first syllable, and is an onset (component index == 0) 
+                    # and it's the first phoneme in the onset  -- it's a boundary between syllables
+                    is_boundary_between_syllables = (syllable_number > 0 and component_index == 0 \
+                                                       and phoneme_position_within_component == 0)
+                    
+                    yield phoneme_id, component_index, is_boundary_between_syllables
+
+
+    def phoneme_is_before_consonant(self, index_):
+        ''' Simple check if phoneme at an index is before a consonant '''
+        return (index_ < len(self) - 1) and (200 <= self.phoneme_ids[index_ + 1] <= 299)
+
+    def phoneme_is_after_consonant(self, index_):
+        ''' Simple check if phoneme at an index is after a consonant ''' 
+        return index_ > 0 and 200 <= self.phoneme_ids[index_ - 1] <= 299
+
+    def phoneme_is_at_end(self, index_):
+        ''' Simple check to see if phoneme is at the end of a word '''
+        return index_ == (len(self) - 1)
+
+    def phoneme_is_at_beginning(self, index_):
+        ''' Don't really need a function for this... but, see if phoneme is at the beginning of a word '''
+        return index_ == 0
+
+
 class Language:
     def __init__(self):
         self.properties = {}
 
-        self.valid_consonants = set([c for c in p.CONSONANTS if c.id_ < 300])
+        self.valid_consonants = {c for c in p.CONSONANTS if c.id_ < 300}
         self.probabilities = { 'onset': {}, 'coda':{}, 'nucleus':{} }
         
         # Will be created at end of nucleus step - this will be used as a quick way to
@@ -190,7 +227,7 @@ class Language:
 
         # There is a chance for one or more random consonants to be removed as well
         if len(self.valid_consonants) >= DROP_RANDOM_CONSONANT_THRESHHOLD and \
-                                         chance(DROP_RANDOM_CONSONANT_CHANCE):
+                                            chance(DROP_RANDOM_CONSONANT_CHANCE):
 
             for i in xrange(random.choice(DROP_RANDOM_CONSONANT_AMOUNTS)):
                 random_consonant = random.choice(tuple(self.valid_consonants))
@@ -207,7 +244,7 @@ class Language:
         # Chance of no onset / coda compared to other clusters (a multiplier of 1 means that this onset has a 50% chance
         #  of occuring relative to <any> other onset!
         self.properties['no_onset_multiplier'] = random.choice(NO_ONSET_MULTIPLIERS)
-        self.properties['no_coda_multiplier'] =  random.choice(NO_CODA_MULTIPLIERS)
+        self.properties['no_coda_multiplier']  = random.choice(NO_CODA_MULTIPLIERS)
 
         # ---------- Does the onset have a restriction in voicing? ---------- #
         if chance(ONSET_RESTRICT_VOICING_CHANCE) and self.properties['language_voicing_restriction'] is None:
@@ -443,8 +480,6 @@ class Language:
 
     def create_word(self, number_of_syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
-        
-        
         syllables = []
         # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
         coda = None
@@ -459,9 +494,7 @@ class Language:
 
             syllables.append(Syllable(onset=onset.phoneme_ids, nucleus=nucleus.phoneme_ids, coda=coda.phoneme_ids))
 
-        word = Word(syllables=syllables)
-
-        return self.orthography.phon_to_orth(phoneme_sequence=word.phoneme_ids)
+        return self.orthography.phon_to_orth(word=Word(syllables=syllables))
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
