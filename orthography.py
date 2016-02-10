@@ -2,6 +2,7 @@
 
 from __future__ import division
 from random import randint as roll
+import random
 
 from lang_gen import weighted_random, chance
 
@@ -297,20 +298,33 @@ class Orthography:
             self.mapping[300] = Glyph(300, '-', before_consonant='', at_beginning='', at_end='') 
             self.mapping[301] = Glyph(301, '-', before_consonant='', at_beginning='', at_end='') 
 
+        # Chance to give some variation to the "r" letter
+        if chance(35):
+            self.mapping[221].at_beginning = 'rh'
+        if chance(25):
+            self.mapping[221].normal = 'rr'
+
+        # Chance to give some variation to the "l" letter
+        if chance(5):
+            self.mapping[224].at_beginning = 'lh'
+        if chance(5):
+            self.mapping[224].at_end = 'll'
+        if chance(15):
+            self.mapping[224].normal = 'll'
+
+
         ## ------------------ Vowels -------------------- ##
-
-
-            
-
-
 
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
-        # if roll(1, 15) == 1:
-        #     self.unproc_mapping[101] = {'y':1, y_u:1}
-        #     self.unproc_mapping[108] = {'y':1, y_u:1}
-        #     # Swap the 'y' consonant with a 'j'
-        #     self.unproc_mapping[222] = {'j':1}
+        if chance(5):
+            y_vowel = random.choice(('y', y_u))
+            self.mapping[101] = Glyph(101, y_vowel)
+            self.mapping[108] = Glyph(108, y_vowel)
+            # Swap the 'y' consonant with a 'j'
+            self.mapping[222] = Glyph(222, 'j')
+            
+    
 
         # # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
         # if roll(0, 15) == 1:
@@ -321,32 +335,6 @@ class Orthography:
         # if roll(0, 15) == 1:
         #     self.replace_grapheme(phoneme_num=215, old='sh', new=strange_f, new_prob=1)
         #     self.replace_grapheme(phoneme_num=216, old='zh', new=strange_f, new_prob=1)
-
-
-        ## TODO ## 
-        # Should run through the full unproc_mapping and add default mapping for phonemes
-        # not in this orthography's parent language, so that any foreign words translated
-        # can be suitably recognizeable 
-
-        # Here's where consonants get mapped
-        # for phoneme_num, graphemes_and_probs in self.unproc_mapping.iteritems():
-        #     # Pick a grapheme to represent this phoneme via weighted choice 
-        #     grapheme = weighted_random(graphemes_and_probs)
-        #     # Apply it to our mapping dict
-        #     self.mapping[phoneme_num] = grapheme
-
-    def replace_grapheme(self, phoneme_num, old, new, new_prob):
-        ''' Replace an instance of a possible grapheme with a new possible grapheme '''
-        # Id old is set to 'clear_all' clears all other grapheme options, so that there is no random chance of getting 
-        # anything other than the specified new phoneme
-        if old == 'clear_all':
-            self.unproc_mapping[phoneme_num] = {}
-        # Otherwise, remove the old grapheme from the possibilities, but retain the other possibilities
-        else:
-            del self.unproc_mapping[phoneme_num][old]
-
-        # Add in the new grapheme and its probability into the mix
-        self.unproc_mapping[phoneme_num][new] = new_prob
 
 
     def get_alphabet(self):
