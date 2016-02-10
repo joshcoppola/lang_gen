@@ -84,6 +84,11 @@ COMPLEX_CODA_PROBABILITY_MULTIPLIER = .2
 
 DIPHTHONG_PROBABILITY_MULTIPLIER = .35
 
+# This is the probability that an empty onset will be forced after a syllable with any coda
+# Otherwise, certain languages may have high probabilities of big multi-consonant clusters
+# which are valid but hard to read (especially in 3+ syllable words)
+LANGUAGE_FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 50
+
 
 def chance(number):
     ''' A simple function for automating a chance (out of 100) of something happening '''
@@ -470,6 +475,10 @@ class Language:
             return p.data.empty_onset
         # No onsets for syllables in the middle of the word if the previous syllable has a coda
         elif syllable_position == 1 and not previous_coda.is_empty():
+            return p.data.empty_onset
+        # If this onset follows a coda (even a simple one), there is a chance that we'll ignore the
+        # force an empty onset - this helps with readability, especially in longer words
+        elif not previous_coda.is_empty() and chance(LANGUAGE_FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE):
             return p.data.empty_onset
 
         # Otherwise, generate an onset with some restrictions
