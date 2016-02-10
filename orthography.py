@@ -269,9 +269,15 @@ class Orthography:
             glyph_bank.remove('c')
             self.mapping[205] = Glyph(205, 'c')
 
+        # -------- /ny/ phoneme ------- #
         if chance(35):
-            self.mapping[230] = Glyph(230, 'kn', after_consonant='n') # cn
-            self.mapping[231] = Glyph(231, 'gn', after_consonant='n') #
+            self.mapping[230] = Glyph(230, 'kn', after_consonant='n', at_end='n') # cn
+            self.mapping[231] = Glyph(231, 'gn', after_consonant='n', at_end='n') #
+        
+        if chance(15):
+            self.mapping[230] = Glyph(230, 'nh', after_consonant='n', at_end='n') 
+            self.mapping[231] = Glyph(231, 'nh', after_consonant='n', at_end='n') 
+        # ------------------------------ #
 
         if chance(35):
             self.mapping[232] = Glyph(232, c_s) #  cy
@@ -312,6 +318,12 @@ class Orthography:
         if chance(15):
             self.mapping[224].normal = 'll'
 
+        # Some variation for the "m" and "n" letters
+        if chance(15):
+            self.mapping[218].normal = 'mm'
+        if chance(15):
+            self.mapping[219].normal = 'nn'
+        
 
         ## ------------------ Vowels -------------------- ##
 
