@@ -344,7 +344,8 @@ class Language:
         while len(self.nuclei_probabilities) < LANGUAGE_MIN_NUM_VOWELS:
             random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
             if random_new_nucleus not in self.nuclei_probabilities:
-                self.nuclei_probabilities[random_new_nucleus] = self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
+                self.nuclei_probabilities[random_new_nucleus] = \
+                                        self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
 
         
         # -------- Cleanup - ensure a diphthong does not occur as the most probable vowel type ------------ #
@@ -552,6 +553,30 @@ class Language:
         elif current_syllable == \
              total_syllables - 1:   return 2    # On the last syllable
         else:                       return 1    # Otherwise, it's in the middle
+
+    def is_common_syllable_component(self, syllable_component, phoneme_id, top_phoneme_level):
+        ''' See if a syllable component is common in a language '''
+
+        if syllable_component == 'onset':
+            sorted_probabilities = sorted([(self.onset_probabilities[onset], onset) for onset in self.onset_probabilities], reverse=True)
+            for probability, onset in sorted_probabilities[0:top_phoneme_level+1]:
+                if onset.has_any_phoneme(phoneme_id):
+                    return 1
+            return 0
+
+        elif syllable_component == 'coda':
+            sorted_probabilities = sorted([(self.coda_probabilities[coda], coda) for coda in self.coda_probabilities], reverse=True)
+            for probability, coda in sorted_probabilities[0:top_phoneme_level+1]:
+                if coda.has_any_phoneme(phoneme_id):
+                    return 1
+            return 0
+
+        elif syllable_component == 'nucleus':
+            sorted_probabilities = sorted([(self.nuclei_probabilities[nucleus], nucleus) for nucleus in self.nucleus_probabilities], reverse=True)
+            for probability, nucleus in sorted_probabilities[0:top_phoneme_level+1]:
+                if nucleus.has_any_phoneme(phoneme_id):
+                    return 1
+            return 0
 
 
     def info_dump(self):
