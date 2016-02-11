@@ -371,7 +371,7 @@ class Orthography:
         orth = ''
 
         # Go through each phonoeme id in the sequence and find the glyph
-        for phoneme_index, (phoneme_id, component, is_boundary_between_syllables) in enumerate(word.get_phonemes()):
+        for phoneme_index, (syllable_number, component_index, phoneme_id, is_boundary_between_syllables) in enumerate(word.get_phonemes()):
             # Some orthographies put a boundary marker between syllables            
             if self.syllable_division and is_boundary_between_syllables:
                 orth += self.syllable_division

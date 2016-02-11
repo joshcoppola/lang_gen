@@ -124,7 +124,7 @@ class Word:
                     is_boundary_between_syllables = (syllable_number > 0 and component_index == 0 \
                                                        and phoneme_position_within_component == 0)
                     
-                    yield phoneme_id, component_index, is_boundary_between_syllables
+                    yield syllable_number, component_index, phoneme_id, is_boundary_between_syllables
 
 
     def phoneme_is_before_consonant(self, index_):
