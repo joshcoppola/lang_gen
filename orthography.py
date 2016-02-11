@@ -147,13 +147,14 @@ class Glyph:
 
          
 
-    def get_glyph(self, before_consonant, after_consonant, at_beginning, at_end):
+    def get_glyph(self, position_info):
         ''' Get glyph depending on position in the word '''
-        if   before_consonant:  return self.before_consonant
-        elif after_consonant:   return self.after_consonant
-        elif at_beginning:      return self.at_beginning
-        elif at_end:            return self.at_end 
-        else:                   return self.normal
+
+        if   position_info['before_consonant']:  return self.before_consonant
+        elif position_info['after_consonant']:   return self.after_consonant
+        elif position_info['at_beginning']:      return self.at_beginning
+        elif position_info['at_end']:            return self.at_end 
+        else:                                    return self.normal
 
 
 
@@ -182,9 +183,6 @@ PHONEMES_WRITTEN = {
     115: Glyph(115, 'eo'), # beorn
     
     # ----------- Consonants ----------- #
-
-    300: Glyph(300, ''), # (300 and 301 are special - used at syllable onsets which don't start with
-    301: Glyph(301, ''), # a consonant and syllable codas which don't end with a consonant, respectively
 
     201: Glyph(201, 'p'),   #
     202: Glyph(202, 'b'),   #
@@ -230,6 +228,10 @@ PHONEMES_WRITTEN = {
     254: Glyph(254, 'dh', before_consonant='d'), # d    d'
     255: Glyph(255, 'kh', before_consonant='k'), # k q  k'
     256: Glyph(256, 'gh', before_consonant='g'), # g    g'
+
+    300: Glyph(300, ''), # (300 and 301 are special - used at syllable onsets which don't start with
+    301: Glyph(301, ''), # a consonant and syllable codas which don't end with a consonant, respectively
+
     }
 
 PHONEMES_BY_GLYPH = defaultdict(list)
@@ -371,16 +373,12 @@ class Orthography:
         orth = ''
 
         # Go through each phonoeme id in the sequence and find the glyph
-        for phoneme_index, (syllable_number, component_index, phoneme_id, is_boundary_between_syllables) in enumerate(word.get_phonemes()):
-            # Some orthographies put a boundary marker between syllables            
-            if self.syllable_division and is_boundary_between_syllables:
+        for phoneme_id, position_info in word.get_phonemes():
+            # Some orthographies put a boundary marker between syllables
+            if self.syllable_division and position_info['is_boundary_between_syllables']:
                 orth += self.syllable_division
-
             # Grab the glyph, based on its position in the word
-            orth += self.mapping[phoneme_id].get_glyph(   word.phoneme_is_before_consonant(phoneme_index), 
-                                                          word.phoneme_is_after_consonant(phoneme_index), 
-                                                          word.phoneme_is_at_beginning(phoneme_index), 
-                                                          word.phoneme_is_at_end(phoneme_index) )
+            orth += self.mapping[phoneme_id].get_glyph( position_info )
 
         return orth
 
