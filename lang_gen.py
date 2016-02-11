@@ -114,34 +114,38 @@ class Word:
         ''' A generator which returns the phoneme id and position within the syllable
             for all phonemes in the word, in addition to the syllable component and whether
             or not this particular position is at a boundary between syllables '''
+        phoneme_index = -1
+
         for syllable_number, syllable in enumerate(self.syllables):
             # Each component in the syllable has one or more phoneme ids
             for component_index, phoneme_ids in enumerate(syllable):
                 # A syllable component can have more than one phoneme (/spr/, /rt/, etc)
                 for phoneme_position_within_component, phoneme_id in enumerate(phoneme_ids):
+                    phoneme_index += 1
+                    
+                    position_info = self.get_phoneme_position_info(phoneme_index=phoneme_index)
                     # If this isn't the first syllable, and is an onset (component index == 0) 
                     # and it's the first phoneme in the onset  -- it's a boundary between syllables
-                    is_boundary_between_syllables = (syllable_number > 0 and component_index == 0 \
-                                                       and phoneme_position_within_component == 0)
-                    
-                    yield syllable_number, component_index, phoneme_id, is_boundary_between_syllables
+                    position_info['is_boundary_between_syllables'] = \
+                        (syllable_number > 0 and component_index == 0 and phoneme_position_within_component == 0)
 
 
-    def phoneme_is_before_consonant(self, index_):
-        ''' Simple check if phoneme at an index is before a consonant '''
-        return (index_ < len(self) - 1) and (200 <= self.phoneme_ids[index_ + 1] <= 299)
+                    yield phoneme_id, position_info
 
-    def phoneme_is_after_consonant(self, index_):
-        ''' Simple check if phoneme at an index is after a consonant ''' 
-        return index_ > 0 and 200 <= self.phoneme_ids[index_ - 1] <= 299
 
-    def phoneme_is_at_end(self, index_):
-        ''' Simple check to see if phoneme is at the end of a word '''
-        return index_ == (len(self) - 1)
+    def get_phoneme_position_info(self, phoneme_index):
+        ''' Get information regarding this phoneme's position in the word '''
+        at_beginning = phoneme_index == 0
+        at_end       = phoneme_index == len(self) - 1
 
-    def phoneme_is_at_beginning(self, index_):
-        ''' Don't really need a function for this... but, see if phoneme is at the beginning of a word '''
-        return index_ == 0
+        phoneme_position_info = {
+            'before_consonant': not at_end       and p.data.is_consonant(self.phoneme_ids[phoneme_index + 1]),
+            'after_consonant':  not at_beginning and p.data.is_consonant(self.phoneme_ids[phoneme_index - 1]), 
+            'at_beginning':     at_beginning, 
+            'at_end':           at_end,
+        }
+
+        return phoneme_position_info
 
 
 class Language:
