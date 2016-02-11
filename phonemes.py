@@ -552,6 +552,9 @@ class PhonemeData:
             self.syllable_nuclei.append(nucleus)
             self.id_to_component[nucleus.id_] = nucleus
 
+    def is_consonant(self, phoneme_id):
+        return 200 <= phoneme_id <= 299
+
 
 
 data = PhonemeData()
