@@ -2,7 +2,7 @@
 from __future__ import division
 import random
 from random import randint as roll
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 import itertools
 
@@ -634,9 +634,15 @@ class Language:
 def weighted_random(choices):
     ''' http://stackoverflow.com/questions/2570690/python-algorithm-to-randomly-select-a-key-based-on-proportionality-weight '''
     # Takes a dict of choice:weight pairs as input
+
+    # ------ Temp fix to preserve random seed - Iteration order in a dict is not consistent ------- #
+    choices_ordered = [(k, v) for k, v in choices.iteritems()]
+    choices_ordered.sort()
+    # ------ End temp fix to preserve random seed ------------------------------------------------- #
+
     r = random.uniform(0, sum(choices.itervalues()))
     s = 0.0
-    for k, w in choices.iteritems():
+    for k, w in choices_ordered:
         s += w
         if r < s: return k
     return k
@@ -646,7 +652,7 @@ if __name__ == '__main__':
     print ''
 
     seed = roll(0, 32000)
-    print 'Random seed', seed
+    print ' -- Running with random seed', seed 
     random.seed(seed)
 
     t = Language()
@@ -656,12 +662,10 @@ if __name__ == '__main__':
 
     # t.orthography.get_alphabet()
 
-    # print ' ---->', roll(1, 100), '<----'
     for i in xrange(12):
         print '{: <14} {: <14} {: <14}'.format(t.create_word(number_of_syllables=1),
                                                t.create_word(number_of_syllables=2),
                                                t.create_word(number_of_syllables=3))
 
-    # print ' ---->', roll(1, 100), '<----'
     print ''
 
