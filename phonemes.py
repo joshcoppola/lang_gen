@@ -556,7 +556,6 @@ class PhonemeData:
         return 200 <= phoneme_id <= 299
 
 
-
 data = PhonemeData()
 
 

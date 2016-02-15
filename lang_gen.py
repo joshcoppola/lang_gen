@@ -9,7 +9,6 @@ import itertools
 import phonemes as p
 import orthography
 
-# random.seed(100)
 
 ''' 
 This file generates languages which have distinct phonemes.
@@ -90,9 +89,9 @@ DIPHTHONG_PROBABILITY_MULTIPLIER = .35
 FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 35
 
 
-def chance(number):
+def chance(number, top=100):
     ''' A simple function for automating a chance (out of 100) of something happening '''
-    return roll(1, 100) <= number
+    return roll(1, top) <= number
 
 # A data structure containing phoneme #s for different parts of the syllable
 Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
@@ -633,26 +632,22 @@ class Language:
 
 
 def weighted_random(choices):
-    ''' Naive algorithm. Input a dict of possibility: weight, 
-    where weight must be an integer for this to function 100% 
-    correctly. Returns the choice '''
-    total = sum(choices.values())
-
-    choice_number = roll(1, total)
-    running_total = 0
-    # After we've generated a random number ranging between the totals,
-    # keep incrementing the running total by the weight until we hit a number
-    # greater than the weight. This should also ignore all possibilities with
-    # a probability of 0. 
-    for key, weight in choices.iteritems():
-        running_total += weight
-        if choice_number <= running_total:
-            return key
+    ''' http://stackoverflow.com/questions/2570690/python-algorithm-to-randomly-select-a-key-based-on-proportionality-weight '''
+    # Takes a dict of choice:weight pairs as input
+    r = random.uniform(0, sum(choices.itervalues()))
+    s = 0.0
+    for k, w in choices.iteritems():
+        s += w
+        if r < s: return k
+    return k
 
 
 if __name__ == '__main__':
     print ''
 
+    seed = roll(0, 32000)
+    print 'Random seed', seed
+    random.seed(seed)
 
     t = Language()
     t.generate_language_properties()

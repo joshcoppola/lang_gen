@@ -122,14 +122,14 @@ UMLAUTS = {
 
 ## A way to capitalize those ASCII characters with accents (not handled by regular python .capitalize() method)
 SYMB_TO_CAPITAL = {
-    i_u:'I',  i_c:'I',  i_l:'I',  i_r:'I',
-    e_r:E_R,  e_c:'E',  e_u:'E',  e_l:E_R,
-    u_u:U_U,  u_c:'U',  u_l:'U',  u_r:'U',
-    ae:AE,    a_c:'A',  a_u:A_U,  a_l:'A',  a_o:A_O,  a_r:'A',
-    o_c:'O',  o_u:O_U,  o_l:'O',  o_r:'O',
-    y_u:'Y',
-    c_s:C_S,
-    n_s:N_S
+    i_u: 'I',  i_c: 'I',  i_l: 'I',  i_r: 'I',
+    e_r: E_R,  e_c: 'E',  e_u: 'E',  e_l: E_R,
+    u_u: U_U,  u_c: 'U',  u_l: 'U',  u_r: 'U',
+    ae:  AE,   a_c: 'A',  a_u: A_U,  a_l: 'A',  a_o: A_O,  a_r: 'A',
+    o_c: 'O',  o_u: O_U,  o_l: 'O',  o_r: 'O',
+    y_u: 'Y',
+    c_s: C_S,
+    n_s: N_S
 }
 
 
@@ -149,13 +149,12 @@ class Glyph:
 
     def get_glyph(self, position_info):
         ''' Get glyph depending on position in the word '''
-
+        
         if   position_info['before_consonant']:  return self.before_consonant
         elif position_info['after_consonant']:   return self.after_consonant
         elif position_info['at_beginning']:      return self.at_beginning
         elif position_info['at_end']:            return self.at_end 
         else:                                    return self.normal
-
 
 
 # In orthography step, each vowel phoneme can be translated to one of these possibilities
@@ -339,6 +338,22 @@ class Orthography:
 
         ## ------------------ Vowels -------------------- ##
 
+
+        if chance(85):
+            diacritic_types = ['left_accent', 'right_accent', 'carrot', 'umlaut']
+            chosen_types = []
+
+            number_of_diacritics = random.choice((1, 2, 2, 2, 3))
+
+            for _ in xrange(number_of_diacritics):
+                diacritic = diacritic_types.pop(random.randrange(len(diacritic_types)))
+                chosen_types.append(diacritic)
+
+            if 'left_accent'  in chosen_types:  self.apply_diacritic_type(diacritic_dict=LEFT_ACCENTS)
+            if 'right_accent' in chosen_types:  self.apply_diacritic_type(diacritic_dict=RIGHT_ACCENTS)
+            if 'carrot'       in chosen_types:  self.apply_diacritic_type(diacritic_dict=CARROTS)
+            if 'umlaut'       in chosen_types:  self.apply_diacritic_type(diacritic_dict=UMLAUTS)
+
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
         if chance(5):
@@ -359,6 +374,12 @@ class Orthography:
         #     self.replace_grapheme(phoneme_num=215, old='sh', new=strange_f, new_prob=1)
         #     self.replace_grapheme(phoneme_num=216, old='zh', new=strange_f, new_prob=1)
 
+    def apply_diacritic_type(self, diacritic_dict):
+        ''' Simple way to sprinkle in some diacritics into the vowels '''
+        for letter, phoneme_ids in diacritic_dict.iteritems():
+            for phoneme_id in phoneme_ids:
+                if chance(1, top=len(phoneme_ids)):
+                    self.mapping[phoneme_id] = Glyph(phoneme_id=phoneme_id, normal=letter)
 
     def get_alphabet(self):
         ''' Print out the alphabet for this language '''
