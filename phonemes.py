@@ -1,6 +1,6 @@
 # coding=Latin-1
 
-from __future__ import division
+from __future__ import division, unicode_literals
 import itertools
 from collections import Counter
 

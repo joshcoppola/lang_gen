@@ -1,6 +1,6 @@
 # coding=Latin-1
 
-from __future__ import division
+from __future__ import division, unicode_literals
 from random import randint as roll
 import random
 from collections import defaultdict
@@ -34,49 +34,49 @@ from lang_gen import weighted_random, chance
 
 # -- Vowels -- #
 
-e_r = chr(130) # é  r = right accent
-e_l = chr(138) # è  l = left accent
-e_c = chr(136) # ê  c = carrot
-e_u = chr(137) # ë  u = umlaut
-E_R = chr(144) # É  
+e_r = 'é' # chr(130) # é  r = right accent
+e_l = 'è' # chr(138) # è  l = left accent
+e_c = 'ê' # chr(136) # ê  c = carrot
+e_u = 'ë' # chr(137) # ë  u = umlaut
+E_R = 'É' # chr(144) # É  
 
-a_r = chr(160) # á
-a_l = chr(133) # à
-a_c = chr(131) # â
-a_u = chr(132) # ä
-a_o = chr(134) # å  o = little circle thing
-A_U = chr(142) # Ä 
-A_O = chr(143) # Å
+a_r = 'á' # chr(160) # á
+a_l = 'à' # chr(133) # à
+a_c = 'â' # chr(131) # â
+a_u = 'ä' # chr(132) # ä
+a_o = 'å' # chr(134) # å  o = little circle thing
+A_U = 'Ä' # chr(142) # Ä 
+A_O = 'Å' # chr(143) # Å
 
-i_r = chr(161) # í 
-i_l = chr(141) # ì
-i_c = chr(140) # î
-i_u = chr(139) # ï
+i_r = 'í' # chr(161) # í 
+i_l = 'ì' # chr(141) # ì
+i_c = 'î' # chr(140) # î
+i_u = 'ï' # chr(139) # ï
 
-o_r = chr(162) # ó
-o_l = chr(149) # ò
-o_c = chr(147) # ô
-o_u = chr(148) # ö
-O_U = chr(153) # Ö
+o_r = 'ó' # chr(162) # ó
+o_l = 'ò' # chr(149) # ò
+o_c = 'ô' # chr(147) # ô
+o_u = 'ö' # chr(148) # ö
+O_U = 'Ö' # chr(153) # Ö
 
-u_r = chr(163) # ú
-u_l = chr(151) # ù
-u_c = chr(150) # û
-u_u = chr(129) # ü
-U_U = chr(154) # Ü
+u_r = 'ú' # chr(163) # ú
+u_l = 'ù' # chr(151) # ù
+u_c = 'û' # chr(150) # û
+u_u = 'ü' # chr(129) # ü
+U_U = 'Ü' # chr(154) # Ü
 
-ae = chr(145)  # æ
-AE = chr(146)  # Æ
+ae = 'æ' # chr(145)  # æ
+AE = 'Æ' # chr(146)  # Æ
 
-y_u = chr(152) # ÿ
+y_u = 'ÿ' # chr(152) # ÿ
 
 # -- Consonants -- #
 
-c_s = chr(135) # ç  s = squiggle
-C_S = chr(128) # Ç
+c_s = 'ç' # chr(135) # ç  s = squiggle
+C_S = 'Ç' # chr(128) # Ç
 
-n_s = chr(164) # ñ
-N_S = chr(165) # Ñ  
+n_s = 'ñ' # chr(164) # ñ
+N_S = 'Ñ' # chr(165) # Ñ  
 
 # -- Other symbols -- ##
 sigma = chr(235)
@@ -149,7 +149,7 @@ class Glyph:
 
     def get_glyph(self, position_info):
         ''' Get glyph depending on position in the word '''
-        
+
         if   position_info['before_consonant']:  return self.before_consonant
         elif position_info['after_consonant']:   return self.after_consonant
         elif position_info['at_beginning']:      return self.at_beginning
@@ -211,10 +211,10 @@ PHONEMES_WRITTEN = {
 
     230: Glyph(230, n_s),  # kn, cn
     231: Glyph(231, n_s),  # gn,
-    232: Glyph(232, 'cy', before_consonant='c'),  # c_s
-    233: Glyph(233, 'gy', before_consonant='g'),  # c_s
-    234: Glyph(234, 'ts', before_consonant='s\''),
-    235: Glyph(235, 'dz', before_consonant='z\''),
+    232: Glyph(232, c_s),  # cy
+    233: Glyph(233, c_s),  # gy
+    234: Glyph(234, 'ts', before_consonant='s'),
+    235: Glyph(235, 'dz', before_consonant='z'),
     236: Glyph(236, 'ch', after_consonant='h'),  # xh, ch, x c_s
     237: Glyph(237, 'gh', after_consonant='h'),  # c_s
     238: Glyph(238, 'r'),
@@ -281,18 +281,18 @@ class Orthography:
             self.mapping[205] = Glyph(205, 'c')
 
         # -------- /ny/ phoneme ------- #
-        if chance(35):
+        if chance(25):
             self.mapping[230] = Glyph(230, 'kn', after_consonant='n', at_end='n') # cn
             self.mapping[231] = Glyph(231, 'gn', after_consonant='n', at_end='n') #
         
-        if chance(15):
+        elif chance(5):
             self.mapping[230] = Glyph(230, 'nh', after_consonant='n', at_end='n') 
             self.mapping[231] = Glyph(231, 'nh', after_consonant='n', at_end='n') 
         # ------------------------------ #
 
         if chance(35):
-            self.mapping[232] = Glyph(232, c_s) #  cy
-            self.mapping[233] = Glyph(233, c_s) #  gy
+            self.mapping[232] = Glyph(232, 'cy', before_consonant='c')
+            self.mapping[233] = Glyph(233, 'gy', before_consonant='g')
 
         if chance(45):
             self.mapping[236] = Glyph(236, 'x', after_consonant='h') # ch, x c_s  xh

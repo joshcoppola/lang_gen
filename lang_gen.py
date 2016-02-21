@@ -1,5 +1,5 @@
 
-from __future__ import division
+from __future__ import division, unicode_literals
 import random
 from random import randint as roll
 from collections import namedtuple, OrderedDict
