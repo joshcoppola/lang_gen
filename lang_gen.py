@@ -37,11 +37,11 @@ DROP_RANDOM_CONSONANT_AMOUNTS = (1, 1, 1, 1, 2, 2, 2, 3)
 # }
 
 # What types of plosive can exist in the language
-PLOSIVE_TYPES = {
+PLOSIVE_TYPES = OrderedDict({
     'unaspirated': 50,
     'aspirated': 35,
     'aspirated and unaspirated': 25
-}
+})
 
 # Chance of dropping all non-english phonemes
 FORCE_ENGLISH_PHONEMES_CHANCE = 25
@@ -152,11 +152,7 @@ class Language:
         self.properties = {}
 
         self.valid_consonants = {c for c in p.CONSONANTS if c.id_ < 300}
-        self.probabilities = { 'onset': {}, 'coda':{}, 'nucleus':{} }
-        
-        # Will be created at end of nucleus step - this will be used as a quick way to
-        # generate monophthongs rather then potentially getting dipthongs later
-        self.nuclei_with_monophthong_probabilities = {}
+        self.probabilities = { 'onset': OrderedDict(), 'coda': OrderedDict(), 'nucleus': OrderedDict(), 'nucleus_monophthong': OrderedDict() }
 
         self.vocabulary = {}
         self.orthography = None
@@ -415,7 +411,7 @@ class Language:
 
         # ----------- Cleanup - Build a list of just nuclei with monophthongs for later use  --------------- #
 
-        self.nuclei_with_monophthong_probabilities = {nucleus: self.probabilities['nucleus'][nucleus] 
+        self.probabilities['nucleus_monophthong'] = {nucleus: self.probabilities['nucleus'][nucleus]
                                                         for nucleus in self.probabilities['nucleus'] 
                                                             if not nucleus.phonemes[0].is_diphthong() }
 
@@ -566,7 +562,7 @@ class Language:
 
         # Diphthongs cannot occur in the middle of a word
         if syllable_position == 1:
-            return weighted_random(self.nuclei_with_monophthong_probabilities)
+            return weighted_random(self.probabilities['nucleus_monophthong'])
 
         while True:
             # Generate the vowel based off of the combined weighings of the vowels surrounding it
@@ -601,7 +597,7 @@ class Language:
         ''' See if a syllable component is common in a language '''
 
         
-        sorted_probabilities = sorted([(self.probabilities[target_syllable_component][component], component) 
+        sorted_probabilities = sorted([(self.probabilities[target_syllable_component][component], component)
                                             for component in self.probabilities[target_syllable_component]], reverse=True)
         for probability, component in sorted_probabilities[0:top_phoneme_level+1]:
             if component.has_any_phoneme(phoneme_id):
@@ -632,17 +628,13 @@ class Language:
 
 
 def weighted_random(choices):
-    ''' http://stackoverflow.com/questions/2570690/python-algorithm-to-randomly-select-a-key-based-on-proportionality-weight '''
-    # Takes a dict of choice:weight pairs as input
-
-    # ------ Temp fix to preserve random seed - Iteration order in a dict is not consistent ------- #
-    choices_ordered = [(k, v) for k, v in choices.iteritems()]
-    choices_ordered.sort()
-    # ------ End temp fix to preserve random seed ------------------------------------------------- #
+    ''' Taken from http://stackoverflow.com/questions/2570690/python-algorithm-to-randomly-select-a-key-based-on-proportionality-weight
+        Takes an OrderedDict of choice:weight pairs as input (Uses OrderedDict to preserve random seed, since apparently
+        python will change the iteration order of regular dictionaries each time, not linked to the random seed.  '''
 
     r = random.uniform(0, sum(choices.itervalues()))
     s = 0.0
-    for k, w in choices_ordered:
+    for k, w in choices.iteritems():
         s += w
         if r < s: return k
     return k
@@ -652,7 +644,7 @@ if __name__ == '__main__':
     print ''
 
     seed = roll(0, 32000)
-    print ' -- Running with random seed', seed 
+    print ' -- Running with random seed', seed
     random.seed(seed)
 
     t = Language()
