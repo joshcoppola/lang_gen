@@ -71,7 +71,7 @@ DROP_ALL_LAX_MONPHTHONGS_CHANCE = 20
 # The chance of dropping all rounded vowels
 DROP_ALL_ROUNDED_CHANCE = 10
 # The chance of dropping random monophthongs / diphthongs
-DROP_RANDOM_MONOPHTHONG_CHANCE = 20
+DROP_RANDOM_MONOPHTHONG_CHANCE = 15
 DROP_RANDOM_DIPHTHONG_CHANCE   = 40
 
 MIN_NUM_VOWELS = 4
@@ -81,7 +81,13 @@ COMPLEX_ONSET_PROBABILITY_MULTIPLIER = .35
 
 COMPLEX_CODA_PROBABILITY_MULTIPLIER = .35
 
-DIPHTHONG_PROBABILITY_MULTIPLIER = .35
+DIPHTHONG_PROBABILITY_MULTIPLIER = .40
+
+# The probability uses a function that can occasionally generate very high numbers.
+# These set the minimum / maximum possible value (with default parameters, it's common 
+# to see the highest probabilities at 200 or so, but spikes as high as 1000+ aren't uncommon)
+MIN_COMPONENT_PROBABILITY = 1
+MAX_COMPONENT_PROBABILITY = 500
 
 # This is the probability that an empty onset will be forced after a syllable with any coda
 # Otherwise, certain languages may have high probabilities of big multi-consonant clusters
@@ -93,6 +99,10 @@ def chance(number, top=100):
     ''' A simple function for automating a chance (out of 100) of something happening '''
     return roll(1, top) <= number
 
+def clamp(minimum, num, maximum):
+    ''' Clamps the input num to ensure it sits between min and max '''
+    return max(minimum, min(num, maximum))
+
 # A data structure containing phoneme #s for different parts of the syllable
 Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 
@@ -100,11 +110,13 @@ class Word:
     def __init__(self, syllables):
         self.syllables = syllables
 
+        self.root = self.syllables[0]
+
         # Writing as a generator comprehension for speed, at the cost of readability?
         self.phoneme_ids =  tuple(phoneme_id 
-                            for syllable in syllables
-                                for component in syllable
-                                    for phoneme_id in component)
+                                    for syllable in syllables
+                                        for component in syllable
+                                            for phoneme_id in component.phoneme_ids)
 
     def __len__(self):
         return len(self.phoneme_ids)
@@ -117,9 +129,9 @@ class Word:
 
         for syllable_number, syllable in enumerate(self.syllables):
             # Each component in the syllable has one or more phoneme ids
-            for component_index, phoneme_ids in enumerate(syllable):
+            for component_index, component in enumerate(syllable):
                 # A syllable component can have more than one phoneme (/spr/, /rt/, etc)
-                for phoneme_position_within_component, phoneme_id in enumerate(phoneme_ids):
+                for phoneme_position_within_component, phoneme_id in enumerate(component.phoneme_ids):
                     phoneme_index += 1
                     
                     position_info = self.get_phoneme_position_info(phoneme_index=phoneme_index)
@@ -127,7 +139,6 @@ class Word:
                     # and it's the first phoneme in the onset  -- it's a boundary between syllables
                     position_info['is_boundary_between_syllables'] = \
                         (syllable_number > 0 and component_index == 0 and phoneme_position_within_component == 0)
-
 
                     yield phoneme_id, position_info
 
@@ -271,11 +282,11 @@ class Language:
 
         ## ------------------------- Print out some info ---------------------------- ##
 
-        self.log.append( self.describe_syllable_level_rules(syllable_part='onset', no_complex=self.properties['no_complex_onsets'],
+        self.log.append( self.describe_syllable_level_rules(syllable_component='onset', component_cannot_be_complex=self.properties['no_complex_onsets'],
                                             voicing_restriction=self.properties['onset_voicing_restriction'],
                                             voicing_restriction_exclusion=self.properties['invert_onset_voicing_restriction']) )
 
-        self.log.append( self.describe_syllable_level_rules(syllable_part='coda', no_complex=self.properties['no_complex_codas'],
+        self.log.append( self.describe_syllable_level_rules(syllable_component='coda', component_cannot_be_complex=self.properties['no_complex_codas'],
                                             voicing_restriction=self.properties['coda_voicing_restriction'],
                                             voicing_restriction_exclusion=self.properties['invert_coda_voicing_restriction']) )
 
@@ -393,15 +404,11 @@ class Language:
                                             for nucleus in self.probabilities['nucleus']], reverse=True)
 
         most_probable_vowel_nucleus = sorted_nuclei_probabilities[0][1]
+        
         # Find the first monophthong, which will be used to swap with the most probable vowel 
         _, most_probable_monophthong_nucleus = \
-            next((probability, nucleus) for probability, nucleus in sorted_nuclei_probabilities 
-                                            if not nucleus.phonemes[0].is_diphthong())
-        # for probability, nucleus in sorted_nuclei_probabilities:
-        #     vowel = nucleus.phonemes[0]
-        #     if not vowel.is_diphthong():
-        #         most_probable_monophthong_nucleus = nucleus
-        #         break
+                next((probability, nucleus) for probability, nucleus in sorted_nuclei_probabilities 
+                    if not nucleus.phonemes[0].is_diphthong())
 
         if most_probable_vowel_nucleus != most_probable_monophthong_nucleus:
             self.log.append( "Flipping {0} with {1}".format(most_probable_vowel_nucleus.get_string(), most_probable_monophthong_nucleus.get_string()) )
@@ -422,39 +429,47 @@ class Language:
         ''' Once a syllable component (onset, coda, or nucleus) has been generated and needs to be 
             added to the language, this method handles generating the probability and adding it '''
 
+        probability = None
+
         # ------------------------------ Onset ------------------------------ #
         if component_type == 'onset':
-            if not component.is_complex():  return int(random.lognormvariate(3, 1.2)) 
-            elif   component.is_complex():  return int(random.lognormvariate(3, 1.2) * COMPLEX_ONSET_PROBABILITY_MULTIPLIER)
+            if not component.is_complex():  probability = int(random.lognormvariate(3, 1.2)) 
+            elif   component.is_complex():  probability = int(random.lognormvariate(3, 1.2) * COMPLEX_ONSET_PROBABILITY_MULTIPLIER)
 
         # ------------------------------ Coda ------------------------------- #
         elif component_type == 'coda':
-            if not component.is_complex():  return int(random.lognormvariate(3, 1.2))
-            elif   component.is_complex():  return int(random.lognormvariate(3, 1.2) * COMPLEX_CODA_PROBABILITY_MULTIPLIER)
+            if not component.is_complex():  probability = int(random.lognormvariate(3, 1.2))
+            elif   component.is_complex():  probability = int(random.lognormvariate(3, 1.2) * COMPLEX_CODA_PROBABILITY_MULTIPLIER)
 
         # ------------------------------ Nucleus ----------------------------- #
         elif component_type == 'nucleus':
             vowel = component.phonemes[0]
             
-            if not vowel.is_diphthong():    return int(random.lognormvariate(3, 1.2))
-            else:                           return int(random.lognormvariate(3, 1.2) * DIPHTHONG_PROBABILITY_MULTIPLIER)
+            if not vowel.is_diphthong():    probability = int(random.lognormvariate(3, 1.2))
+            elif   vowel.is_diphthong():    probability = int(random.lognormvariate(3, 1.2) * DIPHTHONG_PROBABILITY_MULTIPLIER)
+
+        return clamp(minimum=MIN_COMPONENT_PROBABILITY, num=probability, maximum=MAX_COMPONENT_PROBABILITY)
 
 
-    def describe_syllable_level_rules(self, syllable_part, no_complex, voicing_restriction, voicing_restriction_exclusion):
+    def describe_syllable_level_rules(self, syllable_component, component_cannot_be_complex, 
+                                        voicing_restriction, voicing_restriction_exclusion):
         ''' Placeholder function to describe syllable-level phonemic restrictions '''
 
-        complexity_description = 'cannot be complex' if no_complex else 'can be simple or complex'
-
+        # ------------------ Describe voicing restrictions, if any ----------------- #
         if voicing_restriction is None:
             voicing_description = 'have no voicing restrictions'
 
-        else:
-            voicing = 'voiced' if voicing_restriction == 1 else 'unvoiced'
+        elif voicing_restriction is not None:
+            voicing_type = {0:'unvoiced', 1:'voiced'}[voicing_restriction]
 
-            if voicing_restriction_exclusion == 1:  voicing_description = 'only {0} consonants can appear'.format(voicing)
-            else:                                   voicing_description = '{0} consonants cannot appear'.format(voicing)
+            if voicing_restriction_exclusion == 1:  voicing_description = 'only {0} consonants can appear'.format(voicing_type)
+            else:                                   voicing_description = '{0} consonants cannot appear'.format(voicing_type)
 
-        return 'Syllable {0}s {1}, and {2}'.format(syllable_part, complexity_description, voicing_description)
+        # --------------------------- Describe complexity -------------------------- #
+        complexity_description = {0:'can be simple or complex', 1:'cannot be complex'}[component_cannot_be_complex]
+
+
+        return 'Syllable {0}s {1}, and {2}'.format(syllable_component, complexity_description, voicing_description)
 
 
     def get_matching_consonants(self, location='any', method='any', voicing='any', special='any', exclude_matches=0):
@@ -491,9 +506,9 @@ class Language:
 
             nucleus = self.choose_valid_nucleus(onset=onset, coda=coda, syllable_position=syllable_position)
 
-            syllables.append(Syllable(onset=onset.phoneme_ids, nucleus=nucleus.phoneme_ids, coda=coda.phoneme_ids))
+            syllables.append(Syllable(onset=onset, nucleus=nucleus, coda=coda))
 
-        return self.orthography.phon_to_orth(word=Word(syllables=syllables))
+        return Word(syllables=syllables)
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
@@ -605,6 +620,45 @@ class Language:
         return 0
 
 
+    def get_word(self, english_word):
+        if english_word not in self.vocabulary:
+            word = self.create_word(number_of_syllables=1)
+            self.vocabulary[english_word] = word
+
+        return self.vocabulary[english_word]
+
+
+    def make_compound_word(self, english_words_and_morphemes):
+        ''' Takes one or more english words, makes sure they're in the dictionary, gets the roots of each,
+            and joins them together into a compound word '''
+        syllables = []
+        for i, english_word in enumerate(english_words_and_morphemes):
+            root = self.get_word(english_word).root
+
+            syllables = self.get_worked_root(current_root=root, all_current_syllables=syllables)
+
+
+        return Word(syllables=syllables)
+
+    def get_worked_root(self, current_root, all_current_syllables):
+        ''' Take a syllable, get its root, and add it to all current syllables.
+            Makes any adjustments necessary to the root, including perhaps dropping parts of
+            previous syllables (not currently implemented) '''
+        
+        if len(all_current_syllables) \
+                and (not all_current_syllables[-1].coda.is_empty()) \
+                and (not current_root.onset.is_empty()):
+
+            worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
+            all_current_syllables.append(worked_root)
+
+        else:
+            all_current_syllables.append(current_root)
+
+
+        return all_current_syllables
+
+
     def info_dump(self):
         ''' Summarize some basic information about the language and print it out '''
         for text in self.log:
@@ -655,9 +709,23 @@ if __name__ == '__main__':
     # t.orthography.get_alphabet()
 
     for i in xrange(12):
-        print '{: <14} {: <14} {: <14}'.format(t.create_word(number_of_syllables=1),
-                                               t.create_word(number_of_syllables=2),
-                                               t.create_word(number_of_syllables=3))
+        print '{: <14} {: <14} {: <14}'.format(t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=1)),
+                                               t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=2)),
+                                               t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=3)))
 
     print ''
+
+    print t.orthography.phon_to_orth(t.make_compound_word(['black'])), '  black'
+    print t.orthography.phon_to_orth(t.make_compound_word(['blue'])), '  blue'
+    print t.orthography.phon_to_orth(t.make_compound_word(['mountain'])), '  mountain'
+    print t.orthography.phon_to_orth(t.make_compound_word(['woods'])), '  woods'
+    print ''
+
+    print t.orthography.phon_to_orth(t.make_compound_word(['black', 'mountain']))
+    print t.orthography.phon_to_orth(t.make_compound_word(['blue', 'mountain']))
+    print t.orthography.phon_to_orth(t.make_compound_word(['black', 'woods']))
+    print t.orthography.phon_to_orth(t.make_compound_word(['blue', 'woods']))
+    print ''
+
+
 
