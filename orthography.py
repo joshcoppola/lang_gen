@@ -3,7 +3,7 @@
 from __future__ import division, unicode_literals
 from random import randint as roll
 import random
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from lang_gen import weighted_random, chance
 
@@ -86,37 +86,37 @@ strange_f = chr(159)
 
 ## Groups of symbols
 
-RIGHT_ACCENTS = {
-    a_r:(105, 106, 107),
-    e_r:(102, 104),
-    i_r:(101, 102, 108),
-    o_r:(109, ), 
-    u_r:(103, 110, 111)
-}
+RIGHT_ACCENTS = OrderedDict({
+    a_r: (105, 106, 107),
+    e_r: (102, 104),
+    i_r: (101, 102, 108),
+    o_r: (109, ), 
+    u_r: (103, 110, 111)
+})
 
-LEFT_ACCENTS =  {
-    a_l:(105, 106, 107),
-    e_l:(102, 104),
-    i_l:(101, 102, 108),
-    o_l:(109, ), 
-    u_l:(103, 110, 111)
-}
+LEFT_ACCENTS =  OrderedDict({
+    a_l: (105, 106, 107),
+    e_l: (102, 104),
+    i_l: (101, 102, 108),
+    o_l: (109, ), 
+    u_l: (103, 110, 111)
+})
 
-CARROTS = {
-    a_c:(105, 106, 107),
-    e_c:(102, 104),
-    i_c:(101, 108), # 102:i_c
-    o_c:(109, ), 
-    u_c:(103, 110, 111),
-}
+CARROTS = OrderedDict({
+    a_c: (105, 106, 107),
+    e_c: (102, 104),
+    i_c: (101, 108), # 102:i_c
+    o_c: (109, ), 
+    u_c: (103, 110, 111),
+})
 
-UMLAUTS = {
-    a_u:(105, 106, 107),
-    e_u:(102, 104),
-    i_u:(101, 108), # 102:i_u
-    o_u:(109, ), 
-    u_u:(103, 110, 111),
-}
+UMLAUTS = OrderedDict({
+    a_u: (105, 106, 107),
+    e_u: (102, 104),
+    i_u: (101, 108), # 102:i_u
+    o_u: (109, ), 
+    u_u: (103, 110, 111),
+})
 
 
 
@@ -301,8 +301,8 @@ class Orthography:
             # self.mapping[237] =  # c_s  gh
 
         if chance(25):
-            self.mapping[215] = Glyph(215, 'x')
-            self.mapping[216] = Glyph(216, 'x')
+            self.mapping[215] = Glyph(215, 'x', before_consonant='sh')
+            self.mapping[216] = Glyph(216, 'x', before_consonant='sh')
 
 
         if chance(25):
@@ -354,6 +354,10 @@ class Orthography:
             if 'carrot'       in chosen_types:  self.apply_diacritic_type(diacritic_dict=CARROTS)
             if 'umlaut'       in chosen_types:  self.apply_diacritic_type(diacritic_dict=UMLAUTS)
 
+        if chance(10):
+            self.mapping[105] = Glyph(105, ae)
+
+
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
         if chance(5):
@@ -380,6 +384,7 @@ class Orthography:
             for phoneme_id in phoneme_ids:
                 if chance(1, top=len(phoneme_ids)):
                     self.mapping[phoneme_id] = Glyph(phoneme_id=phoneme_id, normal=letter)
+                    continue
 
     def get_alphabet(self):
         ''' Print out the alphabet for this language '''
