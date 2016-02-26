@@ -81,7 +81,8 @@ class SyllableComponent:
 
         self.rule_set = rule_set
 
-        # print self.id_, self.type_, self.get_string(), self.rule_set
+    def __str__(self):
+        return ''.join(p.char for p in self.phonemes)
 
     def is_empty(self):
         ''' Use to see if this cluster is simply a empty phoneme placeholder '''
@@ -95,9 +96,6 @@ class SyllableComponent:
 
     def has_any_phoneme(self, phoneme_ids):
         return any(phoneme_id in self.phoneme_ids for phoneme_id in phoneme_ids)
-
-    def get_string(self):
-        return ''.join(p.char for p in self.phonemes)
 
 
 class SyllableComponentGenerator:

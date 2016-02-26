@@ -411,7 +411,7 @@ class Language:
                     if not nucleus.phonemes[0].is_diphthong())
 
         if most_probable_vowel_nucleus != most_probable_monophthong_nucleus:
-            self.log.append( "Flipping {0} with {1}".format(most_probable_vowel_nucleus.get_string(), most_probable_monophthong_nucleus.get_string()) )
+            self.log.append( "Flipping {0} with {1}".format(most_probable_vowel_nucleus, most_probable_monophthong_nucleus) )
             # Flip the probabilities
             self.probabilities['nucleus'][most_probable_monophthong_nucleus], self.probabilities['nucleus'][most_probable_vowel_nucleus] = \
                 self.probabilities['nucleus'][most_probable_vowel_nucleus], self.probabilities['nucleus'][most_probable_monophthong_nucleus]
@@ -666,11 +666,11 @@ class Language:
 
         table_data = []
 
-        for component in ('onset', 'coda', 'nucleus'):
-            probabilities = sorted(((self.probabilities[component][phoneme], phoneme) 
-                for phoneme in self.probabilities[component].keys()), reverse=True)
+        for component_type in ('onset', 'coda', 'nucleus'):
+            probabilities = sorted(((self.probabilities[component_type][syllable_component], syllable_component) 
+                for syllable_component in self.probabilities[component_type].keys()), reverse=True)
             
-            table_data.append('{0: >4} {1}'.format(perc, phoneme.get_string()) for perc, phoneme in probabilities)
+            table_data.append('{0: >4} {1}'.format(perc, syllable_component) for perc, syllable_component in probabilities)
 
         # Print valid onsets, codas, and nuclei
         print("{: <12} {: <12} {: <12}".format('Onsets', 'Codas', 'Nuclei'))
