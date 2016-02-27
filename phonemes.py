@@ -515,9 +515,7 @@ class PhonemeData:
         
         self.id_to_component = {}
 
-        self.syllable_onsets = []
-        self.syllable_codas = []
-        self.syllable_nuclei = []
+        self.all_syllable_components = {'onset': [], 'coda': [], 'nucleus': []}
 
         # Word-initial empty syllable onset
         self.empty_onset = SyllableComponent(type_='onset', phonemes=tuple(c for c in CONSONANTS if c.id_==300), 
@@ -533,13 +531,13 @@ class PhonemeData:
         ## Onsets ##
         for onset_rules in POSSIBLE_ONSETS:
             for onset in onset_rules.generate():
-                self.syllable_onsets.append(onset)
+                self.all_syllable_components['onset'].append(onset)
                 self.id_to_component[onset.id_] = onset
         
         ## Codas ##
         for coda_rules in POSSIBLE_CODAS:
             for coda in coda_rules.generate():
-                self.syllable_codas.append(coda)
+                self.all_syllable_components['coda'].append(coda)
                 self.id_to_component[coda.id_] = coda
         
         ## Vowels ##
@@ -547,8 +545,17 @@ class PhonemeData:
         # SyllableComponentGenerator; thus the SyllableComponent definition is created here.
         for vowel in VOWELS:
             nucleus = SyllableComponent(type_='nucleus', phonemes=(vowel, ), rule_set='vowel')
-            self.syllable_nuclei.append(nucleus)
+            self.all_syllable_components['nucleus'].append(nucleus)
             self.id_to_component[nucleus.id_] = nucleus
+
+    def get_component_by_phoneme_ids(self, syllable_component_type, phoneme_ids):
+        for component in self.all_syllable_components[syllable_component_type]:
+            if component.phoneme_ids == phoneme_ids:
+                return component
+
+        else:
+            return None
+            # print 'ERROR - {0} of {1} not found'.format(syllable_component_type, phoneme_ids)
 
     def is_consonant(self, phoneme_id):
         return 200 <= phoneme_id <= 299

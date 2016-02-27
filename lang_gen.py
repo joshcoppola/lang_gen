@@ -94,6 +94,8 @@ MAX_COMPONENT_PROBABILITY = 500
 # which are valid but hard to read (especially in 3+ syllable words)
 FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 35
 
+COMPOUND_WORD_DROP_PREVIOUS_CODA_CHANCE = 25
+COMPOUND_WORD_DROP_ONSET_CHANCE = 25
 
 def chance(number, top=100):
     ''' A simple function for automating a chance (out of 100) of something happening '''
@@ -103,23 +105,99 @@ def clamp(minimum, num, maximum):
     ''' Clamps the input num to ensure it sits between min and max '''
     return max(minimum, min(num, maximum))
 
+def join_list(list_):
+    if len(list_) == 1:
+        return list_[0]
+
+    elif len(list_) == 2:
+        return ' and '.join(list_)
+
+    else:
+        return '{0}, and {1}'.format(', '.join(list[:-1]), list_[-1])
+
+def number_of_non_empty_components(syllable):
+    ''' Helper method to find how many non-empty components a syllable has '''
+    return sum((not syllable_component.is_empty()) for syllable_component in syllable)
+
 # A data structure containing phoneme #s for different parts of the syllable
 Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 
-class Word:
-    def __init__(self, syllables):
-        self.syllables = syllables
+# class Syllable:
+#     def __init__(self, onset, nucleus, coda):
+#         self.onset = onset
+#         self.nucleus = nucleus
+#         self.coda = coda
 
-        self.root = self.syllables[0]
+class Word:
+    def __init__(self, language, syllables, etymology=None):
+        self.language = language
+        self.syllables = syllables
 
         # Writing as a generator comprehension for speed, at the cost of readability?
         self.phoneme_ids =  tuple(phoneme_id 
                                     for syllable in syllables
                                         for component in syllable
                                             for phoneme_id in component.phoneme_ids)
+        
+        self.root = self.set_root()
+
+        self.etymology = etymology
 
     def __len__(self):
         return len(self.phoneme_ids)
+
+    def __str__(self):
+        return self.language.orthography.phon_to_orth(word=self)
+
+    def set_root(self):
+        ''' Determine the "root" syllable of a word. Chooses the first syllable if 
+            that syllable has at least 2 non-empty components. Otherwise, preferentially 
+            choose the syllable which contains the most non-empty syllable componenets '''
+        
+        # If the first syllable has at least two components, that will be the root
+        if number_of_non_empty_components(syllable=self.syllables[0]) >= 2 or len(self) == 1:
+            return self.create_syllable_from_nearby_phonemes(self.syllables[0])
+
+        # Otherwise, the root will be the syllable with the most syllable components
+        else:
+            chosen_syllable = sorted([(number_of_non_empty_components(syllable), syllable) 
+                                for syllable in self.syllables], reverse=True)[0][1]
+
+            return self.create_syllable_from_nearby_phonemes(chosen_syllable)
+
+    def create_syllable_from_nearby_phonemes(self, syllable):
+        ''' When looking at a root syllable, sometimes the word itself may have consonant phonemes
+            before or after the root syllable, although the root syllable is considered to have an
+            empty onset or coda. This function will create a new special "root" syllable which may
+            contain some of the phonemes from surrounding syllables, making the "root" appear to 
+            compose a larger part of the word '''
+
+        s_index = self.syllables.index(syllable)
+
+        new_syllable_info = {'onset': syllable.onset, 'nucleus': syllable.nucleus, 'coda': syllable.coda}
+
+        # ---------- Word roots can assimilate the last consonant of the previous coda ---------- #
+        if syllable.onset.is_empty() and s_index > 0 and (not self.syllables[s_index - 1].coda.is_empty()):
+            last_phoneme_of_previous_coda = self.syllables[s_index - 1].coda.phoneme_ids[-1]
+            # Get the onset which matches the last phoneme from the previous coda
+            potential_onset = p.data.get_component_by_phoneme_ids(syllable_component_type='onset', 
+                                                                    phoneme_ids=tuple([last_phoneme_of_previous_coda]))
+            # Make sure that the new onset is valid in this language
+            if potential_onset is not None and potential_onset in self.language.probabilities['onset']:
+                new_syllable_info['onset'] = potential_onset
+
+        # ---------- Word roots can also assimilate the first consonant of the preceding coda ---------- #
+        if syllable.coda.is_empty() and s_index < len(self.syllables) - 1 and (not self.syllables[s_index + 1].onset.is_empty()):
+            first_phoneme_of_next_onset = self.syllables[s_index + 1].onset.phoneme_ids[0]
+            # Get the coda which matches the first phoneme from the precedinbg onset
+            potential_coda = p.data.get_component_by_phoneme_ids(syllable_component_type='coda', 
+                                                                    phoneme_ids=tuple([first_phoneme_of_next_onset]))
+            # Make sure that the new coda is valid in this language
+            if potential_coda is not None and potential_coda in self.language.probabilities['coda']:
+                new_syllable_info['coda'] = potential_coda
+
+        return Syllable(onset=new_syllable_info['onset'], nucleus=new_syllable_info['nucleus'], coda=new_syllable_info['coda'])
+
 
     def get_phonemes(self):
         ''' A generator which returns the phoneme id and position within the syllable
@@ -156,6 +234,16 @@ class Word:
         }
 
         return phoneme_position_info
+
+    def desc_etymology(self):
+        if self.etymology:
+            desc_list = ['{0} ("{1}");'.format(root_word, english_morpheme) for (root_word, english_morpheme) in self.etymology]
+            desc = 'from {0}'.format(join_list(desc_list))
+
+        else:
+            desc = '(unknown origin)'
+
+        return desc
 
 
 class Language:
@@ -306,7 +394,7 @@ class Language:
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['onset_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_onset_voicing_restriction'])
 
-        for onset in p.data.syllable_onsets:
+        for onset in p.data.all_syllable_components['onset']:
             # Can't allow the debug empty consonant, or onsets containing invalid consonants
             if onset.is_empty() or not all(onset_consonant in self.valid_consonants for onset_consonant in onset.phonemes):
                 continue
@@ -332,7 +420,7 @@ class Language:
         invalid_consonants = self.get_matching_consonants(voicing=self.properties['coda_voicing_restriction'],
                                                           exclude_matches=self.properties['invert_coda_voicing_restriction'])
 
-        for coda in p.data.syllable_codas:
+        for coda in p.data.all_syllable_components['coda']:
             # Can't allow the debug empty consonant, or codas containing invalid consonants
             if coda.is_empty() or not all(coda_consonant in self.valid_consonants for coda_consonant in coda.phonemes):
                 continue
@@ -368,7 +456,7 @@ class Language:
         # ------- End setting initial parameters ------- #
 
         # Set vowel probabilities, can vary on preceding and following cluster
-        for nucleus in p.data.syllable_nuclei:
+        for nucleus in p.data.all_syllable_components['nucleus']:
             # Nuclei will always have 1 phoneme - the vowel
             vowel = nucleus.phonemes[0]
 
@@ -392,7 +480,7 @@ class Language:
         # If somehow we've ended up with a ridiculously low number of vowels,
         # this loop ensures we'll be brought up to above 5 vowels total
         while len(self.probabilities['nucleus']) < MIN_NUM_VOWELS:
-            random_new_nucleus = random.choice(tuple(p.data.syllable_nuclei))
+            random_new_nucleus = random.choice(tuple(p.data.all_syllable_components['nucleus']))
             if random_new_nucleus not in self.probabilities['nucleus']:
                 self.probabilities['nucleus'][random_new_nucleus] = \
                                         self.get_component_probability(component_type='nucleus', component=random_new_nucleus)
@@ -490,25 +578,6 @@ class Language:
         ''' Remove a set of consonants matching certain parameters from this language ''' 
         for consonant in self.get_matching_consonants(location=location, method=method, voicing=voicing, special=special):
             self.valid_consonants.remove(consonant)
-
-
-    def create_word(self, number_of_syllables=2):
-        ''' Generate a word in the language, using the appropriate phoneme frequencies '''
-        syllables = []
-        # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
-        coda = None
-
-        for i in xrange(number_of_syllables):            
-            syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=number_of_syllables)
-
-            onset = self.choose_valid_onset(previous_coda=coda, syllable_position=syllable_position)
-            coda  = self.choose_valid_coda(onset=onset, syllable_position=syllable_position)
-
-            nucleus = self.choose_valid_nucleus(onset=onset, coda=coda, syllable_position=syllable_position)
-
-            syllables.append(Syllable(onset=onset, nucleus=nucleus, coda=coda))
-
-        return Word(syllables=syllables)
 
 
     def choose_valid_onset(self, previous_coda, syllable_position):
@@ -622,36 +691,82 @@ class Language:
 
     def get_word(self, english_word):
         if english_word not in self.vocabulary:
-            word = self.create_word(number_of_syllables=1)
+            word = self.create_word(number_of_syllables=2)
             self.vocabulary[english_word] = word
 
         return self.vocabulary[english_word]
 
 
-    def make_compound_word(self, english_words_and_morphemes):
-        ''' Takes one or more english words, makes sure they're in the dictionary, gets the roots of each,
-            and joins them together into a compound word '''
+    def create_word(self, number_of_syllables=2):
+        ''' Generate a word in the language, using the appropriate phoneme frequencies '''
         syllables = []
-        for i, english_word in enumerate(english_words_and_morphemes):
-            root = self.get_word(english_word).root
+        # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
+        coda = None
 
-            syllables = self.get_worked_root(current_root=root, all_current_syllables=syllables)
+        for i in xrange(number_of_syllables):            
+            syllable_position = self.get_syllable_position(current_syllable=i, total_syllables=number_of_syllables)
+
+            onset = self.choose_valid_onset(previous_coda=coda, syllable_position=syllable_position)
+            coda  = self.choose_valid_coda(onset=onset, syllable_position=syllable_position)
+
+            nucleus = self.choose_valid_nucleus(onset=onset, coda=coda, syllable_position=syllable_position)
+
+            syllables.append(Syllable(onset=onset, nucleus=nucleus, coda=coda))
+
+        return Word(language=self, syllables=syllables)
 
 
-        return Word(syllables=syllables)
+    def create_compound_word(self, english_morphemes):
+        ''' Takes one or more english morphemes in a string format (separated by spaces), 
+            makes sure they're in the dictionary, gets the roots of each, and joins them 
+            together into a compound word '''
+
+        syllables = []
+        etymology = []
+
+        for i, english_morpheme in enumerate(english_morphemes.split()):
+            # Handles creating the word in the dictionary, if it doesn't already exist
+            root_word = self.get_word(english_morpheme)
+
+            syllables = self.get_worked_root(current_root=root_word.root, all_current_syllables=syllables)
+            etymology.append((root_word, english_morpheme))
+
+        # Create the word
+        compound_word = Word(language=self, syllables=syllables, etymology=etymology)
+
+        # Add to dictionary
+        self.vocabulary[english_morphemes] = compound_word
+
+        return compound_word
 
     def get_worked_root(self, current_root, all_current_syllables):
         ''' Take a syllable, get its root, and add it to all current syllables.
             Makes any adjustments necessary to the root, including perhaps dropping parts of
             previous syllables (not currently implemented) '''
-        
-        if len(all_current_syllables) \
+
+        # --- Make sure the current syllable's first phoneme is not the same as the previous syllable's last phoneme --- #
+        if len(all_current_syllables) and all_current_syllables[-1].coda.phoneme_ids[-1] == current_root.onset.phoneme_ids[0]:
+            # Keep the syllable the same, but with an empty onset
+            worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
+            all_current_syllables.append(worked_root)
+
+        # --- If the previous coda is not complex, and the current onset is not complex, join without truncating anything --- #
+        elif len(all_current_syllables) \
+            and chance(50) \
+            and (not all_current_syllables[-1].coda.is_complex()) \
+            and (not current_root.onset.is_complex()):
+
+            all_current_syllables.append(current_root)
+
+        # --- If the previous coda is not empty, and the current onset is not empty, join after truncating current syllable's onset --- #
+        elif len(all_current_syllables) \
                 and (not all_current_syllables[-1].coda.is_empty()) \
                 and (not current_root.onset.is_empty()):
 
             worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
             all_current_syllables.append(worked_root)
 
+        # --- Otherwise, join without truncating anything --- #
         else:
             all_current_syllables.append(current_root)
 
@@ -715,17 +830,21 @@ if __name__ == '__main__':
 
     print ''
 
-    print t.orthography.phon_to_orth(t.make_compound_word(['black'])), '  black'
-    print t.orthography.phon_to_orth(t.make_compound_word(['blue'])), '  blue'
-    print t.orthography.phon_to_orth(t.make_compound_word(['mountain'])), '  mountain'
-    print t.orthography.phon_to_orth(t.make_compound_word(['woods'])), '  woods'
+    print t.orthography.phon_to_orth(word=t.get_word('black')), '  black'
+    print t.orthography.phon_to_orth(word=t.get_word('blue')), '  blue'
+    print t.orthography.phon_to_orth(word=t.get_word('mountain')), '  mountain'
+    print t.orthography.phon_to_orth(word=t.get_word('woods')), '  woods'
     print ''
 
-    print t.orthography.phon_to_orth(t.make_compound_word(['black', 'mountain']))
-    print t.orthography.phon_to_orth(t.make_compound_word(['blue', 'mountain']))
-    print t.orthography.phon_to_orth(t.make_compound_word(['black', 'woods']))
-    print t.orthography.phon_to_orth(t.make_compound_word(['blue', 'woods']))
+    sample_compund_words = (
+        t.create_compound_word('black mountain'),
+        t.create_compound_word('blue mountain'),
+        t.create_compound_word('black woods'),
+        t.create_compound_word('blue woods')
+        )
+
+    for word in sample_compund_words:
+        print t.orthography.phon_to_orth(word=word), word.desc_etymology()
+    
     print ''
-
-
 
