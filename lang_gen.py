@@ -129,7 +129,8 @@ Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 #         self.coda = coda
 
 class Word:
-    def __init__(self, language, syllables, etymology=None):
+    def __init__(self, meaning, language, syllables, etymology=None):
+        self.meaning = meaning
         self.language = language
         self.syllables = syllables
 
@@ -237,7 +238,7 @@ class Word:
 
     def desc_etymology(self):
         if self.etymology:
-            desc_list = ['{0} ("{1}");'.format(root_word, english_morpheme) for (root_word, english_morpheme) in self.etymology]
+            desc_list = ['{0} ("{1}")'.format(root_word, english_morpheme) for (root_word, english_morpheme) in self.etymology]
             desc = 'from {0}'.format(join_list(desc_list))
 
         else:
@@ -691,13 +692,13 @@ class Language:
 
     def get_word(self, english_word):
         if english_word not in self.vocabulary:
-            word = self.create_word(number_of_syllables=2)
+            word = self.create_word(meaning=english_word, number_of_syllables=2)
             self.vocabulary[english_word] = word
 
         return self.vocabulary[english_word]
 
 
-    def create_word(self, number_of_syllables=2):
+    def create_word(self, meaning, number_of_syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
         syllables = []
         # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
@@ -713,10 +714,10 @@ class Language:
 
             syllables.append(Syllable(onset=onset, nucleus=nucleus, coda=coda))
 
-        return Word(language=self, syllables=syllables)
+        return Word(meaning=meaning, language=self, syllables=syllables)
 
 
-    def create_compound_word(self, english_morphemes):
+    def create_compound_word(self, meaning, english_morphemes):
         ''' Takes one or more english morphemes in a string format (separated by spaces), 
             makes sure they're in the dictionary, gets the roots of each, and joins them 
             together into a compound word '''
@@ -732,7 +733,7 @@ class Language:
             etymology.append((root_word, english_morpheme))
 
         # Create the word
-        compound_word = Word(language=self, syllables=syllables, etymology=etymology)
+        compound_word = Word(meaning=meaning, language=self, syllables=syllables, etymology=etymology)
 
         # Add to dictionary
         self.vocabulary[english_morphemes] = compound_word
@@ -824,27 +825,21 @@ if __name__ == '__main__':
     # t.orthography.get_alphabet()
 
     for i in xrange(12):
-        print '{: <14} {: <14} {: <14}'.format(t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=1)),
-                                               t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=2)),
-                                               t.orthography.phon_to_orth(word=t.create_word(number_of_syllables=3)))
+        print '{: <14} {: <14} {: <14}'.format(t.create_word(meaning="none", number_of_syllables=1),
+                                               t.create_word(meaning="none", number_of_syllables=2),
+                                               t.create_word(meaning="none", number_of_syllables=3))
 
-    print ''
-
-    print t.orthography.phon_to_orth(word=t.get_word('black')), '  black'
-    print t.orthography.phon_to_orth(word=t.get_word('blue')), '  blue'
-    print t.orthography.phon_to_orth(word=t.get_word('mountain')), '  mountain'
-    print t.orthography.phon_to_orth(word=t.get_word('woods')), '  woods'
     print ''
 
     sample_compund_words = (
-        t.create_compound_word('black mountain'),
-        t.create_compound_word('blue mountain'),
-        t.create_compound_word('black woods'),
-        t.create_compound_word('blue woods')
+        t.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),
+        t.create_compound_word(meaning='blue mountain', english_morphemes='blue mountain'),
+        t.create_compound_word(meaning='black woods', english_morphemes='black woods'),
+        t.create_compound_word(meaning='blue woods', english_morphemes='blue woods')
         )
 
     for word in sample_compund_words:
-        print t.orthography.phon_to_orth(word=word), word.desc_etymology()
+        print '{0} "{1}" {2}'.format(word, word.meaning, word.desc_etymology())
     
     print ''
 
