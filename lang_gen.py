@@ -72,7 +72,7 @@ DROP_ALL_LAX_MONPHTHONGS_CHANCE = 20
 DROP_ALL_ROUNDED_CHANCE = 10
 # The chance of dropping random monophthongs / diphthongs
 DROP_RANDOM_MONOPHTHONG_CHANCE = 15
-DROP_RANDOM_DIPHTHONG_CHANCE   = 40
+DROP_RANDOM_DIPHTHONG_CHANCE   = 25
 
 MIN_NUM_VOWELS = 4
 
@@ -115,18 +115,23 @@ def join_list(list_):
     else:
         return '{0}, and {1}'.format(', '.join(list[:-1]), list_[-1])
 
-def number_of_non_empty_components(syllable):
-    ''' Helper method to find how many non-empty components a syllable has '''
-    return sum((not syllable_component.is_empty()) for syllable_component in syllable)
 
 # A data structure containing phoneme #s for different parts of the syllable
-Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
+# Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
 
-# class Syllable:
-#     def __init__(self, onset, nucleus, coda):
-#         self.onset = onset
-#         self.nucleus = nucleus
-#         self.coda = coda
+class Syllable:
+    def __init__(self, onset, nucleus, coda):
+        self.onset = onset
+        self.nucleus = nucleus
+        self.coda = coda
+
+    def get_components(self):
+        return (self.onset, self.nucleus, self.coda)
+
+    def number_of_non_empty_components(self):
+        ''' Find how many non-empty components a syllable has '''
+        return sum((not component.is_empty()) for component in self.get_components())
+
 
 class Word:
     def __init__(self, meaning, language, syllables, etymology=None):
@@ -137,7 +142,7 @@ class Word:
         # Writing as a generator comprehension for speed, at the cost of readability?
         self.phoneme_ids =  tuple(phoneme_id 
                                     for syllable in syllables
-                                        for component in syllable
+                                        for component in syllable.get_components()
                                             for phoneme_id in component.phoneme_ids)
         
         self.root = self.set_root()
@@ -156,12 +161,12 @@ class Word:
             choose the syllable which contains the most non-empty syllable componenets '''
         
         # If the first syllable has at least two components, that will be the root
-        if number_of_non_empty_components(syllable=self.syllables[0]) >= 2 or len(self) == 1:
+        if self.syllables[0].number_of_non_empty_components() >= 2 or len(self) == 1:
             return self.create_syllable_from_nearby_phonemes(self.syllables[0])
 
         # Otherwise, the root will be the syllable with the most syllable components
         else:
-            chosen_syllable = sorted([(number_of_non_empty_components(syllable), syllable) 
+            chosen_syllable = sorted([(syllable.number_of_non_empty_components(), syllable)
                                 for syllable in self.syllables], reverse=True)[0][1]
 
             return self.create_syllable_from_nearby_phonemes(chosen_syllable)
@@ -208,7 +213,7 @@ class Word:
 
         for syllable_number, syllable in enumerate(self.syllables):
             # Each component in the syllable has one or more phoneme ids
-            for component_index, component in enumerate(syllable):
+            for component_index, component in enumerate(syllable.get_components()):
                 # A syllable component can have more than one phoneme (/spr/, /rt/, etc)
                 for phoneme_position_within_component, phoneme_id in enumerate(component.phoneme_ids):
                     phoneme_index += 1
@@ -690,15 +695,15 @@ class Language:
         return 0
 
 
-    def get_word(self, english_word):
-        if english_word not in self.vocabulary:
-            word = self.create_word(meaning=english_word, number_of_syllables=2)
-            self.vocabulary[english_word] = word
+    def get_word(self, meaning):
+        ''' Gets a word from the dictionary, creating it if it doesn't exist '''
+        if meaning not in self.vocabulary:
+            self.create_word(meaning=meaning, number_of_syllables=2)
 
-        return self.vocabulary[english_word]
+        return self.vocabulary[meaning]
 
 
-    def create_word(self, meaning, number_of_syllables=2):
+    def create_word(self, meaning, etymology=None, number_of_syllables=2):
         ''' Generate a word in the language, using the appropriate phoneme frequencies '''
         syllables = []
         # Set to None so that the first onset knows that it's word-initial (no coda comes before the first syllable)
@@ -714,7 +719,13 @@ class Language:
 
             syllables.append(Syllable(onset=onset, nucleus=nucleus, coda=coda))
 
-        return Word(meaning=meaning, language=self, syllables=syllables)
+        word = Word(meaning=meaning, language=self, syllables=syllables)
+
+        # Add to vocabulary if it has a meaning
+        if meaning:
+            self.vocabulary[meaning] = word
+
+        return word
 
 
     def create_compound_word(self, meaning, english_morphemes):
@@ -727,7 +738,7 @@ class Language:
 
         for i, english_morpheme in enumerate(english_morphemes.split()):
             # Handles creating the word in the dictionary, if it doesn't already exist
-            root_word = self.get_word(english_morpheme)
+            root_word = self.get_word(meaning=english_morpheme)
 
             syllables = self.get_worked_root(current_root=root_word.root, all_current_syllables=syllables)
             etymology.append((root_word, english_morpheme))
