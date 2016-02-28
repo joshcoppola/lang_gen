@@ -751,6 +751,16 @@ class Language:
             worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
             all_current_syllables.append(worked_root)
 
+        # -- One the rare case there is an empty coda followed by an empty onset, add a consonant between them --- #
+        elif len(all_current_syllables) and all_current_syllables[-1].coda == p.data.empty_coda \
+                                        and current_root.onset == p.data.empty_onset:
+
+            # Choose an onset from the list of this language's valid onsets. (Syllable position shouldn't matter for picking
+            # an onset, but here we're choosing a value of 1 (middle of word) anyway
+            dividing_onset = self.choose_valid_onset(previous_coda=all_current_syllables[-1].coda, syllable_position=1)
+            worked_root = Syllable(onset=dividing_onset, nucleus=current_root.nucleus, coda=current_root.coda)
+            all_current_syllables.append(worked_root)
+
         # --- If the previous coda is not complex, and the current onset is not complex, join without truncating anything --- #
         elif len(all_current_syllables) \
             and chance(50) \
