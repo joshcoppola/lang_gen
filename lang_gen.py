@@ -132,6 +132,8 @@ class Syllable:
         ''' Find how many non-empty components a syllable has '''
         return sum((not component.is_empty()) for component in self.get_components())
 
+    def number_of_phonemes(self):
+        return sum((len(component.phoneme_ids) for component in self.get_components() if not component.is_empty()))
 
 class Word:
     def __init__(self, meaning, language, syllables, etymology=None):
@@ -156,20 +158,13 @@ class Word:
         return self.language.orthography.phon_to_orth(word=self)
 
     def set_root(self):
-        ''' Determine the "root" syllable of a word. Chooses the first syllable if 
-            that syllable has at least 2 non-empty components. Otherwise, preferentially 
-            choose the syllable which contains the most non-empty syllable componenets '''
-        
-        # If the first syllable has at least two components, that will be the root
-        if self.syllables[0].number_of_non_empty_components() >= 2 or len(self) == 1:
-            return self.create_syllable_from_nearby_phonemes(self.syllables[0])
+        ''' Determine the "root" syllable of a word, currently by choosing the syllable
+            with the most non-empty phonemes '''
 
-        # Otherwise, the root will be the syllable with the most syllable components
-        else:
-            chosen_syllable = sorted([(syllable.number_of_non_empty_components(), syllable)
-                                for syllable in self.syllables], reverse=True)[0][1]
+        phonemes_per_syllable = ((syllable.number_of_phonemes(), syllable) for syllable in self.syllables)
+        chosen_syllable = sorted(phonemes_per_syllable, reverse=True)[0][1]
 
-            return self.create_syllable_from_nearby_phonemes(chosen_syllable)
+        return self.create_syllable_from_nearby_phonemes(chosen_syllable)
 
     def create_syllable_from_nearby_phonemes(self, syllable):
         ''' When looking at a root syllable, sometimes the word itself may have consonant phonemes
@@ -851,6 +846,9 @@ if __name__ == '__main__':
                                                t.create_word(meaning="none", number_of_syllables=3))
 
     print ''
+
+
+    # TODO - word root = syllable with the most phonemes D:
 
     sample_compund_words = (
         t.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),
