@@ -8,7 +8,7 @@ import itertools
 
 import phonemes as p
 import orthography
-
+from helpers import weighted_random, chance, clamp, join_list
 
 ''' 
 This file generates languages which have distinct phonemes.
@@ -97,23 +97,7 @@ FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 35
 COMPOUND_WORD_DROP_PREVIOUS_CODA_CHANCE = 25
 COMPOUND_WORD_DROP_ONSET_CHANCE = 25
 
-def chance(number, top=100):
-    ''' A simple function for automating a chance (out of 100) of something happening '''
-    return roll(1, top) <= number
 
-def clamp(minimum, num, maximum):
-    ''' Clamps the input num to ensure it sits between min and max '''
-    return max(minimum, min(num, maximum))
-
-def join_list(list_):
-    if len(list_) == 1:
-        return list_[0]
-
-    elif len(list_) == 2:
-        return ' and '.join(list_)
-
-    else:
-        return '{0}, and {1}'.format(', '.join(list[:-1]), list_[-1])
 
 
 # A data structure containing phoneme #s for different parts of the syllable
@@ -813,17 +797,24 @@ class Language:
         print ''
 
 
-def weighted_random(choices):
-    ''' Taken from http://stackoverflow.com/questions/2570690/python-algorithm-to-randomly-select-a-key-based-on-proportionality-weight
-        Takes an OrderedDict of choice:weight pairs as input (Uses OrderedDict to preserve random seed, since apparently
-        python will change the iteration order of regular dictionaries each time, not linked to the random seed.  '''
+    def get_sample_word_sets(self):
+        sample_compound_words = (
+            self.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),
+            self.create_compound_word(meaning='blue mountain', english_morphemes='blue mountain'),
+            self.create_compound_word(meaning='black woods', english_morphemes='black woods'),
+            self.create_compound_word(meaning='blue woods', english_morphemes='blue woods'),
+            self.create_compound_word(meaning='long river', english_morphemes='long river'),
+            self.create_compound_word(meaning='blue river', english_morphemes='blue river'),
+            self.create_compound_word(meaning='black river', english_morphemes='black river'),
+            self.create_compound_word(meaning='calm harbor', english_morphemes='calm harbor'),
+            self.create_compound_word(meaning='great river', english_morphemes='great river'),
+            self.create_compound_word(meaning='red island', english_morphemes='red island'),
+            self.create_compound_word(meaning='red river', english_morphemes='red river')
+        )
 
-    r = random.uniform(0, sum(choices.itervalues()))
-    s = 0.0
-    for k, w in choices.iteritems():
-        s += w
-        if r < s: return k
-    return k
+        # formatted_words = ['{0} "{1}" {2}'.format(word, word.meaning, word.desc_etymology()) for word in sample_compound_words]
+
+        return sample_compound_words
 
 
 if __name__ == '__main__':
@@ -847,8 +838,6 @@ if __name__ == '__main__':
 
     print ''
 
-
-    # TODO - word root = syllable with the most phonemes D:
 
     sample_compund_words = (
         t.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),

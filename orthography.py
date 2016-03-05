@@ -5,7 +5,7 @@ from random import randint as roll
 import random
 from collections import defaultdict, OrderedDict
 
-from lang_gen import weighted_random, chance
+from helpers import weighted_random, chance
 
 
 ## Vowels: English mapping

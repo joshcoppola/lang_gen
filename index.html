@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+{% autoescape true %}
+
+
+<html>
+   
+   <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+   <link href='https://fonts.googleapis.com/css?family=Lato:400,300' rel='stylesheet' type='text/css'>
+
+	<body>  
+		<div class="page-container">
+			<h1> The language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
+			
+			<div class='language-description'>
+				{% for line in text_log %}
+					<div class='language-rule'>{{ line.capitalize() }}</div>
+				{% endfor %}
+			</div>
+			
+			<div>
+				{% for word in words %}
+					<div> 
+						<span>{{ word.language.orthography.phon_to_orth(word).capitalize() }}</span>
+						<span class='meaning secondary'>"{{word.meaning}}"</span>
+						<span class='etymology secondary'>{{word.desc_etymology()}}</span>
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+		
+		<div>
+			<button> New language </button>
+		</div>
+		
+	</body>
+</html>
+{% endautoescape %}
