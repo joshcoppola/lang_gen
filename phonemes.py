@@ -74,9 +74,9 @@ class SyllableComponent:
         # can be onset, coda, or nucleus
         self.type_ = type_
         
-        # Contains the raw consonants
+        # Contains the raw phonemes
         self.phonemes = phonemes
-        # Contains the unique numbers for the consonants
+        # Contains the unique numbers for the phonemes
         self.phoneme_ids = tuple(p.id_ for p in self.phonemes)
 
         self.rule_set = rule_set
@@ -222,20 +222,20 @@ CONSONANTS = [
     Consonant(231, 'gn',  'palatal',    'nasal',        1, '"ny" sound'),           # ɲ
     Consonant(232, 'cy',  'palatal',    'stop',         0, '"cy" sound'),           # c
     Consonant(233, 'gy',  'palatal',    'stop',         1, '"gy" sound'),           # ɟ
-    Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"\'s" as in \'sup'),    # ts (Sibilant affricate)
+    Consonant(234, 'ts',  'alveolar',   'affricate',    0, '"ts" as in \'sup'),    # ts (Sibilant affricate)
     Consonant(235, 'dz',  'alveolar',   'affricate',    1, '"dz" as in "adze" '),   # dz (Sibilant affricate)
-    Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" in Scottish "loch"'),      # x
-    Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" in Scottish "laghail"'),   # ɣ
+    Consonant(236, 'xh',  'velar',      'fricative',    0, '"ch" as in "loch"'),      # x
+    Consonant(237, 'gh',  'velar',      'fricative',    1, '"gh" as in "laghail"'),   # ɣ
     Consonant(238, 'r~',  'alveolar',   'trill',        1, 'rolled "r"'),          # r
     Consonant(239, 'b~',  'bilabial',   'trill',        1, 'rolled "b"'),          # B
     # Consonant(240, '\'',  'glottal',    'stop',         0, 'glottal stop, as in the middle sound of "uh-oh"')  # ʔ
 
-    Consonant(251, 'p^',  'bilabial',     'plosive',     0, '"p"',                       special='aspirated'),
-    Consonant(252, 'b^',  'bilabial',     'plosive',     1, '"b"',                       special='aspirated'),
-    Consonant(253, 't^',  'alveolar',     'plosive',     0, '"t"',                       special='aspirated'),
-    Consonant(254, 'd^',  'alveolar',     'plosive',     1, '"d"',                       special='aspirated'),
-    Consonant(255, 'k^',  'velar',        'plosive',     0, '"k"',                       special='aspirated'),
-    Consonant(256, 'g^',  'velar',        'plosive',     1, 'hard "g", as in "girl"',    special='aspirated'),
+    Consonant(251, 'p^',  'bilabial',     'plosive',     0, 'apirated "p"',    special='aspirated'),
+    Consonant(252, 'b^',  'bilabial',     'plosive',     1, 'apirated "b"',    special='aspirated'),
+    Consonant(253, 't^',  'alveolar',     'plosive',     0, 'apirated "t"',    special='aspirated'),
+    Consonant(254, 'd^',  'alveolar',     'plosive',     1, 'apirated "d"',    special='aspirated'),
+    Consonant(255, 'k^',  'velar',        'plosive',     0, 'apirated "k"',    special='aspirated'),
+    Consonant(256, 'g^',  'velar',        'plosive',     1, 'apirated "g"',    special='aspirated'),
 
     # _-_-_-_-_-_- These will represent places where consonants <could> go, but none actually exist  _-_-_-_-_-_
 
@@ -514,6 +514,7 @@ class PhonemeData:
 
         
         self.id_to_component = {}
+        self.id_to_phoneme = {phoneme.id_: phoneme for phoneme in itertools.chain(CONSONANTS, VOWELS)}
 
         self.all_syllable_components = {'onset': [], 'coda': [], 'nucleus': []}
 
