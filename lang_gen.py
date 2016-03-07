@@ -705,7 +705,7 @@ class Language:
     def get_word(self, meaning):
         ''' Gets a word from the dictionary, creating it if it doesn't exist '''
         if meaning not in self.vocabulary:
-            self.create_word(meaning=meaning, number_of_syllables=2)
+            self.create_word(meaning=meaning, number_of_syllables=random.choice((1, 2)))
 
         return self.vocabulary[meaning]
 
