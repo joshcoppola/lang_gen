@@ -178,7 +178,7 @@ class Glyph:
             # Build up the list of descriptions for each letter (because of the above code, each letter may have multiple descriptions of places it can occur
             desc_list = []
             for letter, description_of_condition_list in identical_letters:
-                desc_list.append('"{0}" when it occurs {1}'.format(letter, join_list(description_of_condition_list, conjunction='or')))
+                desc_list.append('"{0}" when occuring {1}'.format(letter, join_list(description_of_condition_list, conjunction='or')))
 
             # Finally, join all of the descriptions together into one big list of exceptions to the "normal" glpyh being displayed
             written_exceptions = ''
@@ -391,12 +391,12 @@ class Orthography:
 
         ## Sort of silly, but it we allow "y" to be used in place of "i", we need
         ## to make sure that "y" cannot also be a consonant (we'll replace with J for now)
-        if chance(5):
-            y_vowel = random.choice(('y', y_u))
-            self.mapping[101] = Glyph(101, y_vowel)
-            self.mapping[108] = Glyph(108, y_vowel)
-            # Swap the 'y' consonant with a 'j'
-            self.mapping[222] = Glyph(222, 'j')
+        # if chance(5):
+        #     y_vowel = random.choice(('y', y_u))
+        #     self.mapping[101] = Glyph(101, y_vowel)
+        #     self.mapping[108] = Glyph(108, y_vowel)
+        #     # Swap the 'y' consonant with a 'j'
+        #     self.mapping[222] = Glyph(222, 'j')
             
 
         # # Replace "th" with "thorn"/"eth" (sigma symbol in our library)
