@@ -3,6 +3,7 @@ from __future__ import division, unicode_literals
 import random
 from random import randint as roll
 from collections import namedtuple, OrderedDict
+from copy import deepcopy
 
 import itertools
 
@@ -97,8 +98,17 @@ FORCE_EMPTY_ONSET_AFTER_ANY_CODA_CHANCE = 35
 COMPOUND_WORD_DROP_PREVIOUS_CODA_CHANCE = 25
 COMPOUND_WORD_DROP_ONSET_CHANCE = 25
 
+# The maximum amount of phonemes a word can be to have the generator consider including
+# the entire word (not just the root) into the compound word
+MAX_COMPOUND_WORD_PHONEMES_PER_SECTION = 4
 
+# How many syllables a compound word can become, before the generator forces a sub-word
+# to become truncated (using only the word's root)
+MAX_COMPOUND_WORD_SYLLABLES_BEFORE_FORCE_USING_WORD_ROOT = 2
 
+# When generating a compound word, the chance that it will try to use the entire sub-word
+# as part of the compound word, if it meets all other criteria
+USE_FULL_WORD_FOR_COMPOUND_WORD_CHANCE = 60
 
 # A data structure containing phoneme #s for different parts of the syllable
 # Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
@@ -140,6 +150,9 @@ class Word:
 
     def __str__(self):
         return self.language.orthography.phon_to_orth(word=self)
+
+    def number_of_non_empty_phonemes(self):
+        return len([phoneme_id for phoneme_id in self.phoneme_ids if phoneme_id < 300])
 
     def set_root(self):
         ''' Determine the "root" syllable of a word, currently by choosing the syllable
@@ -236,6 +249,8 @@ class Language:
         self.properties = {}
 
         self.valid_consonants = {c for c in p.CONSONANTS if c.id_ < 300}
+        self.valid_vowels = set([])
+
         self.probabilities = { 'onset': OrderedDict(), 'coda': OrderedDict(), 'nucleus': OrderedDict(), 'nucleus_monophthong': OrderedDict() }
 
         self.vocabulary = {}
@@ -353,21 +368,14 @@ class Language:
         self.generate_valid_codas()
 
 
-        ## ------------------------- Print out some info ---------------------------- ##
-
-        self.log.append( self.describe_syllable_level_rules(syllable_component='onset', component_cannot_be_complex=self.properties['no_complex_onsets'],
-                                            voicing_restriction=self.properties['onset_voicing_restriction'],
-                                            voicing_restriction_exclusion=self.properties['invert_onset_voicing_restriction']) )
-
-        self.log.append( self.describe_syllable_level_rules(syllable_component='coda', component_cannot_be_complex=self.properties['no_complex_codas'],
-                                            voicing_restriction=self.properties['coda_voicing_restriction'],
-                                            voicing_restriction_exclusion=self.properties['invert_coda_voicing_restriction']) )
+        ## ------------------------- Log some info ---------------------------- ##
+        onset_description, coda_description = self.describe_syllable_level_rules()
+        self.log.extend( [onset_description, coda_description] )
 
         self.log.append( 'No onset mutiplier: {0}'.format(self.properties['no_onset_multiplier']) )
         self.log.append( 'No coda mutiplier: {0}'.format(self.properties['no_coda_multiplier']) )
 
         self.log.append( 'Consonants: {0}; Vowels: {1}\n'.format(len(self.valid_consonants), len(self.probabilities['nucleus'])) )
-
 
         ## -------------------------- Set orthography -------------------------------- ##
 
@@ -497,6 +505,10 @@ class Language:
 
         # ---------------------------------------- End Cleanup --------------------------------------------- #
 
+        # ------------- Put aside a set of the vowels contained within the syllable components ------------- #
+
+        for nucleus in self.probabilities['nucleus'].keys():
+            self.valid_vowels.add(nucleus.phonemes[0])
 
     def get_component_probability(self, component_type, component):
         ''' Once a syllable component (onset, coda, or nucleus) has been generated and needs to be 
@@ -524,15 +536,16 @@ class Language:
         return clamp(minimum=MIN_COMPONENT_PROBABILITY, num=probability, maximum=MAX_COMPONENT_PROBABILITY)
 
 
-    def describe_syllable_level_rules(self, syllable_component, component_cannot_be_complex, 
+    def create_syllable_rule_description(self, syllable_component, component_cannot_be_complex,
                                         voicing_restriction, voicing_restriction_exclusion):
         ''' Placeholder function to describe syllable-level phonemic restrictions '''
+
 
         # ------------------ Describe voicing restrictions, if any ----------------- #
         if voicing_restriction is None:
             voicing_description = 'have no voicing restrictions'
 
-        elif voicing_restriction is not None:
+        else:
             voicing_type = {0:'unvoiced', 1:'voiced'}[voicing_restriction]
 
             if voicing_restriction_exclusion == 1:  voicing_description = 'only {0} consonants can appear'.format(voicing_type)
@@ -541,8 +554,23 @@ class Language:
         # --------------------------- Describe complexity -------------------------- #
         complexity_description = {0:'can be simple or complex', 1:'cannot be complex'}[component_cannot_be_complex]
 
-
         return 'Syllable {0}s {1}, and {2}'.format(syllable_component, complexity_description, voicing_description)
+
+
+    def describe_syllable_level_rules(self):
+        ''' Describes any rules for forming an onset or coda in this language '''
+
+        onset_description = self.create_syllable_rule_description(syllable_component='onset',
+                                            component_cannot_be_complex=self.properties['no_complex_onsets'],
+                                            voicing_restriction=self.properties['onset_voicing_restriction'],
+                                            voicing_restriction_exclusion=self.properties['invert_onset_voicing_restriction'])
+
+        coda_description = self.create_syllable_rule_description(syllable_component='coda',
+                                            component_cannot_be_complex=self.properties['no_complex_codas'],
+                                            voicing_restriction=self.properties['coda_voicing_restriction'],
+                                            voicing_restriction_exclusion=self.properties['invert_coda_voicing_restriction'])
+
+        return onset_description, coda_description
 
 
     def get_matching_consonants(self, location='any', method='any', voicing='any', special='any', exclude_matches=0):
@@ -717,10 +745,23 @@ class Language:
 
         for i, english_morpheme in enumerate(english_morphemes.split()):
             # Handles creating the word in the dictionary, if it doesn't already exist
-            root_word = self.get_word(meaning=english_morpheme)
+            original_word = self.get_word(meaning=english_morpheme)
 
-            syllables = self.get_worked_root(current_root=root_word.root, all_current_syllables=syllables)
-            etymology.append((root_word, english_morpheme))
+            # If the word is short enough, the entire thing may be appended
+            if original_word.number_of_non_empty_phonemes() <= MAX_COMPOUND_WORD_PHONEMES_PER_SECTION \
+                        and len(syllables) <= MAX_COMPOUND_WORD_SYLLABLES_BEFORE_FORCE_USING_WORD_ROOT\
+                        and chance(USE_FULL_WORD_FOR_COMPOUND_WORD_CHANCE):
+                # !! Make sure to make a copy of the original word's syllables or weird stuff happens. Deepcopy appears to not be
+                # necessary... but it's probably a good idea
+                syllables = self.trim_syllables(current_syllables=deepcopy(original_word.syllables), all_current_syllables=syllables)
+
+            # If the word is long, use the word's root
+            else:
+                # !! Make sure to make a copy of the original word's root. Technically not necessary... but probably a good idea
+                syllables = self.trim_syllables(current_syllables=[deepcopy(original_word.root)], all_current_syllables=syllables)
+
+            # Append the full original word so it can be tracked in the etymology
+            etymology.append((original_word, english_morpheme))
 
         # Create the word
         compound_word = Word(meaning=meaning, language=self, syllables=syllables, etymology=etymology)
@@ -730,50 +771,60 @@ class Language:
 
         return compound_word
 
-    def get_worked_root(self, current_root, all_current_syllables):
+    def trim_syllables(self, current_syllables, all_current_syllables):
         ''' Take a syllable, get its root, and add it to all current syllables.
             Makes any adjustments necessary to the root, including perhaps dropping parts of
             previous syllables (not currently implemented) '''
 
         # --- Make sure the current syllable's first phoneme is not the same as the previous syllable's last phoneme --- #
-        if len(all_current_syllables) and all_current_syllables[-1].coda.phoneme_ids[-1] == current_root.onset.phoneme_ids[0]:
+        if len(all_current_syllables) and all_current_syllables[-1].coda.phoneme_ids[-1] == current_syllables[0].onset.phoneme_ids[0]:
             # Keep the syllable the same, but with an empty onset
-            worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
-            all_current_syllables.append(worked_root)
+            current_syllables = self.pop_and_replace_with_onset(current_syllables=current_syllables, new_onset=p.data.empty_onset)
+            all_current_syllables.extend(current_syllables)
 
         # -- One the rare case there is an empty coda followed by an empty onset, add a consonant between them --- #
         elif len(all_current_syllables) and all_current_syllables[-1].coda == p.data.empty_coda \
-                                        and current_root.onset == p.data.empty_onset:
+                                        and current_syllables[0].onset == p.data.empty_onset:
 
             # Choose an onset from the list of this language's valid onsets. (Syllable position shouldn't matter for picking
-            # an onset, but here we're choosing a value of 1 (middle of word) anyway
-            dividing_onset = self.choose_valid_onset(previous_coda=all_current_syllables[-1].coda, syllable_position=1)
-            worked_root = Syllable(onset=dividing_onset, nucleus=current_root.nucleus, coda=current_root.coda)
-            all_current_syllables.append(worked_root)
+            # an onset, but here we're choosing a value of 1 (middle of word) anyway. Loop to ensure an empty onset is not chosen!
+            dividing_onset = p.data.empty_onset
+            while dividing_onset != p.data.empty_onset:
+                dividing_onset = self.choose_valid_onset(previous_coda=all_current_syllables[-1].coda, syllable_position=1)
+
+            current_syllables = self.pop_and_replace_with_onset(current_syllables=current_syllables, new_onset=dividing_onset)
+            all_current_syllables.extend(current_syllables)
 
         # --- If the previous coda is not complex, and the current onset is not complex, join without truncating anything --- #
         elif len(all_current_syllables) \
             and chance(50) \
             and (not all_current_syllables[-1].coda.is_complex()) \
-            and (not current_root.onset.is_complex()):
+            and (not current_syllables[0].onset.is_complex()):
 
-            all_current_syllables.append(current_root)
+            all_current_syllables.extend(current_syllables)
 
         # --- If the previous coda is not empty, and the current onset is not empty, join after truncating current syllable's onset --- #
         elif len(all_current_syllables) \
                 and (not all_current_syllables[-1].coda.is_empty()) \
-                and (not current_root.onset.is_empty()):
+                and (not current_syllables[0].onset.is_empty()):
 
-            worked_root = Syllable(onset=p.data.empty_onset, nucleus=current_root.nucleus, coda=current_root.coda)
-            all_current_syllables.append(worked_root)
+            current_syllables = self.pop_and_replace_with_onset(current_syllables=current_syllables, new_onset=p.data.empty_onset)
+            all_current_syllables.extend(current_syllables)
 
         # --- Otherwise, join without truncating anything --- #
         else:
-            all_current_syllables.append(current_root)
+            all_current_syllables.extend(current_syllables)
 
 
         return all_current_syllables
 
+    def pop_and_replace_with_onset(self, current_syllables, new_onset):
+        ''' Specific helper method to avoid code duplication '''
+        syllable_to_change = current_syllables.pop(0)
+        worked_syllable = Syllable(onset=new_onset, nucleus=syllable_to_change.nucleus, coda=syllable_to_change.coda)
+        current_syllables.insert(0, worked_syllable)
+
+        return current_syllables
 
     def info_dump(self):
         ''' Summarize some basic information about the language and print it out '''
@@ -816,6 +867,18 @@ class Language:
 
         return sample_compound_words
 
+    def get_sample_vocabulary_words(self):
+
+        sample_words = ['city', 'house', 'teacher', 'student', 'lawyer', 'doctor', 'patient', 'waiter', 'secretary',
+                        'priest', 'police', 'army', 'soldier', 'artist', 'author', 'manager', 'reporter', 'actor',
+                        'hat', 'dress', 'shirt', 'pants', 'shoes', 'coat', 'son', 'daughter', 'mother', 'father' 'baby',
+                        'man', 'woman', 'brother', 'sister', 'king', 'queen', 'president', 'boy', 'girl', 'child', 'human',
+                        'friend', 'cheese', 'bread', 'soup', 'cake', 'chicken', 'apple', 'banana', 'orange', 'lemon', 'corn',
+                        'rice', 'oil', 'seed', 'table', 'chair', 'bed', 'dream', 'window', 'door', 'book', 'key', 'letter',
+                        'note', 'bag', 'box', 'tool', 'dog', 'cat', 'fish', 'bird', 'cow', 'pig', 'mouse', 'horse']
+
+        return [self.get_word(english_word) for english_word in random.sample(sample_words, 20)]
+
 
 if __name__ == '__main__':
     print ''
@@ -848,6 +911,6 @@ if __name__ == '__main__':
 
     for word in sample_compund_words:
         print '{0} "{1}" {2}'.format(word, word.meaning, word.desc_etymology())
-    
+
     print ''
 
