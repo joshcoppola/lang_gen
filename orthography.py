@@ -5,8 +5,8 @@ from random import randint as roll
 import random
 from collections import defaultdict, OrderedDict
 
-from helpers import weighted_random, chance
-
+from helpers import weighted_random, chance, join_list
+import phonemes as p
 
 ## Vowels: English mapping
 # 101	i		sit		|	102	ee		see
@@ -156,6 +156,37 @@ class Glyph:
         elif position_info['at_end']:            return self.at_end 
         else:                                    return self.normal
 
+    def get_description(self):
+        ''' Gets a human-readable description of this glyph, accounting for any exceptions to the "normal" form '''
+
+        # Should only trigger when all of the exceptions are the same, but the normal is different (since the len of the set
+        # should be at least 2 if there are no exceptions, but 1 if they're all the same
+        if self.normal != self.before_consonant and len({self.before_consonant, self.after_consonant, self.at_end, self.at_beginning}) == 1:
+            written_exceptions = 'often written as "{0}"'.format(self.before_consonant)
+
+        else:
+            identical_letters = defaultdict(list)
+            # Loop through each instance where the letters may be different, and build up the dict of identical letters if they're the same
+            for letter_at_condition, text_description_of_condition in ((self.before_consonant, 'before a consonant'), (self.after_consonant, 'after a consonant'),
+                                                                       (self.at_beginning, 'at the beginning of a word'), (self.at_end, 'at the end of a word')):
+                if letter_at_condition != self.normal:
+                    identical_letters[letter_at_condition].append(text_description_of_condition)
+
+            # Sort so that the letters with the fewest instances have their descriptions first (helps with readability)
+            identical_letters = sorted([(letter, description_of_condition_list) for letter, description_of_condition_list in identical_letters.iteritems()], key=lambda x: len(x[1]))
+
+            # Build up the list of descriptions for each letter (because of the above code, each letter may have multiple descriptions of places it can occur
+            desc_list = []
+            for letter, description_of_condition_list in identical_letters:
+                desc_list.append('"{0}" when it occurs {1}'.format(letter, join_list(description_of_condition_list, conjunction='or')))
+
+            # Finally, join all of the descriptions together into one big list of exceptions to the "normal" glpyh being displayed
+            written_exceptions = ''
+            if desc_list:
+                written_exceptions += 'written as {0}'.format(join_list(desc_list, oxford_comma=','))
+
+
+        return self.normal, p.data.id_to_phoneme[self.phoneme_id].description, written_exceptions
 
 # In orthography step, each vowel phoneme can be translated to one of these possibilities
 # In orthography step, each consonant phoneme can be translated to one of these possibilities
@@ -263,8 +294,8 @@ class Orthography:
         # aspirated_plosives = self.parent_language.get_matching_consonants(method='plosive', special='aspirated')
         # unaspirated_plosives = self.parent_language.get_matching_consonants(method='plosive', special=None)
 
-        if chance(15):
-            self.syllable_division = '-'
+        # if chance(15):
+        #     self.syllable_division = '-'
 
         # Potentially replace aspirated plosives with an apostrophe after it's name
         if chance(15) and not self.syllable_division:
@@ -309,11 +340,11 @@ class Orthography:
             self.mapping[212] = Glyph(212, 'dh') # th
 
         # Chance of language putting placeholders where missing onsets / codas go
-        if chance(10) and not self.syllable_division:
-            # (300 and 301 are special - used at syllable onsets which don't start with
-            # a consonant and syllable codas which don't end with a consonant, respectively
-            self.mapping[300] = Glyph(300, '-', before_consonant='', at_beginning='', at_end='') 
-            self.mapping[301] = Glyph(301, '-', before_consonant='', at_beginning='', at_end='') 
+        # if chance(10) and not self.syllable_division:
+        #     # (300 and 301 are special - used at syllable onsets which don't start with
+        #     # a consonant and syllable codas which don't end with a consonant, respectively
+        #     self.mapping[300] = Glyph(300, '-', before_consonant='', at_beginning='', at_end='')
+        #     self.mapping[301] = Glyph(301, '-', before_consonant='', at_beginning='', at_end='')
 
         # Chance to give some variation to the "r" letter
         if chance(35):
