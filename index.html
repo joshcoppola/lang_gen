@@ -9,15 +9,65 @@
 
 	<body>  
 		<div class="page-container">
-			<h1> The language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
-			
-			<div class='language-description'>
-				{% for line in text_log %}
-					<div class='language-rule'>{{ line.capitalize() }}</div>
+			<div class="title">
+				<h1> The language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
+			</div>
+			<div class="language-description secondary">
+				<!-- # of consonants / vowels -->
+				<span class='language-rule'>{{ phoneme_info.capitalize() }} </span>
+				<!-- Onset / coda descriptions -->
+				{% for line in descriptions %}
+					<span class='language-rule'> &nbsp; &#8258; &nbsp; {{ line.capitalize() }}</span>
 				{% endfor %}
 			</div>
+
+			<div class="'language-properties inline left-side">
+				<!-- -------------- Consonants -------------- -->
+				<div class="phoneme-list text-panel">
+					<h2> Consonants in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
+
+					<table>
+						<tr>
+							<th> Glyph </th>
+							<th> Pronunciation </th>
+							<th> Notes </th>
+						</tr>
+						{% for normal, english_equivalent, pronunciation_exceptions in consonants %}
+							<tr>
+								<td>{{ normal }}</td>
+								<td>{{ english_equivalent }}</td>
+								<td class="secondary">{{ pronunciation_exceptions }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+				</div>
+
+				<!-- -------------- Vowels -------------- -->
+				<div class="phoneme-list text-panel">
+					<h2> Vowels in {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h2>
+
+					<table>
+						<tr>
+							<th> Glyph </th>
+							<th> Pronunciation </th>
+							<th> Notes </th>
+						</tr>
+						{% for normal, english_equivalent, pronunciation_exceptions in vowels %}
+							<tr>
+								<td>{{ normal }}</td>
+								<td>{{ english_equivalent }}</td>
+								<td class="secondary">{{ pronunciation_exceptions }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+				</div>
+
+			</div>
 			
-			<div>
+			<div class="sample-words inline text-panel right-side">
+				<h2>
+					Place names in {{ name }}
+				</h2>
 				{% for word in words %}
 					<div> 
 						<span>{{ word.language.orthography.phon_to_orth(word).capitalize() }}</span>
@@ -26,10 +76,6 @@
 					</div>
 				{% endfor %}
 			</div>
-		</div>
-		
-		<div>
-			<button> New language </button>
 		</div>
 		
 	</body>
