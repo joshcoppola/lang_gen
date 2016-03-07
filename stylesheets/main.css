@@ -5,9 +5,11 @@ body {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
-  background-color: #F2F2F2;
+  /*background-color: #F2F2F2;*/
+  background-color: #e8eaf6;
   color: #000;
   opacity: .87;
+  margin: 0em;
 }
 
 h1 {
@@ -22,32 +24,38 @@ h2 {
 }
 
 table {
-    font-size: 14px;
+    font-size: 16px;
     text-align: left;
-    line-height: 1.1;
+    line-height: 1.15;
+    display: inline-block;
+    vertical-align: top;
 }
 
 th {
-    padding-right: 1.5em;
+    padding-right: 1.2em;
+    padding-bottom: .2em;
     opacity: .54;
+    text-transform: uppercase;
+    font-size: 12px;
     font-weight: 400;
+    vertical-align: bottom;
 }
 
 td {
-    padding-right: 1.5em;
+    padding-right: 1em;
+    padding-bottom: .3em;
 }
 
 .page-container {
-  margin: 2em 8em;
-  padding: 1em 2em;
+  text-align: center;
 }
 
 .text-panel {
-    margin: 1em;
-    padding: 2em;
+    margin: 1em .5em;
+    padding: 1.5em;
     background-color: #FFF;
+    text-align: left;
     /* box-shadow: 2px 2px 2px #BBB; */
-
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 }
 
@@ -61,18 +69,21 @@ td {
     vertical-align: top;
 }
 
+.table-spacer {
+    margin-left: 5em;
+}
+
 .left-side {
-    width: 700px;
+    /*width: 550px;*/
 }
 
 .right-side {
-    width: 600px;
+    /*width: 550px;*/
 }
 
-.meaning {
-  font-style: italic;
+.small-text{
+  font-size: 13px;
 }
-
 
 .secondary {
   opacity: .54
