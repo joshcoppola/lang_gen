@@ -198,23 +198,23 @@ CONSONANTS = [
     Consonant(203, 't',  'alveolar',     'plosive',     0, '"t"'),
     Consonant(204, 'd',  'alveolar',     'plosive',     1, '"d"'),
     Consonant(205, 'k',  'velar',        'plosive',     0, '"k"'),
-    Consonant(206, 'g',  'velar',        'plosive',     1, 'hard "g", as in "girl"'),
-    Consonant(207, 'ch', 'post-alveolar','affricate',   0, '"ch", as in "chest"'),
-    Consonant(208, 'j',  'post-alveolar','affricate',   1, '"j", as in "join"'),
+    Consonant(206, 'g',  'velar',        'plosive',     1, '"g"'),
+    Consonant(207, 'ch', 'post-alveolar','affricate',   0, '"ch"'),
+    Consonant(208, 'j',  'post-alveolar','affricate',   1, '"j"'),
     Consonant(209, 'f',  'labio-dental', 'fricative',   0, '"f"'),
     Consonant(210, 'v',  'labio-dental', 'fricative',   1, '"v"'),
-    Consonant(211, 'th', 'dental',       'fricative',   0, 'soft "th", as in "thin"'),
-    Consonant(212, 'th', 'dental',       'fricative',   1, 'hard "th", as in "that"'),
+    Consonant(211, 'th', 'dental',       'fricative',   0, 'soft "th" as in "thin"'),
+    Consonant(212, 'th', 'dental',       'fricative',   1, 'hard "th" as in "that"'),
     Consonant(213, 's',  'alveolar',     'fricative',   0, '"s"'),
     Consonant(214, 'z',  'alveolar',     'fricative',   1, '"z"'),
-    Consonant(215, 'sh', 'post-alveolar','fricative',   0, '"sh", as in "shore"'),
-    Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh", as the "s" in "treasure"'),
+    Consonant(215, 'sh', 'post-alveolar','fricative',   0, '"sh"'),
+    Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh" as the "z" in "azure"'),
     Consonant(217, 'h',  'glottal',      'fricative',   3, '"h"'),
     Consonant(218, 'm',  'bilabial',     'nasal',       3, '"m"'),
     Consonant(219, 'n',  'alveolar',     'nasal',       3, '"n"'),
-    Consonant(220, 'ng', 'velar',        'nasal',       3, '"ng", as in "thing"'),
+    Consonant(220, 'ng', 'velar',        'nasal',       3, '"ng" as in "thing"'),
     Consonant(221, 'r',  'alveolar',     'approximant', 3, '"r"'), # R - should be also post-alveolar?
-    Consonant(222, 'y',  'palatal',      'approximant', 3, '"y" consonant, as in "yes"'), # J - really Y
+    Consonant(222, 'y',  'palatal',      'approximant', 3, '"y" as in "yes"'), # J - really Y
     Consonant(223, 'w',  'velar',        'approximant', 3, '"w"'),
     Consonant(224, 'l',  'alveolar',     'lateral',     3, '"l"'),
 
@@ -276,23 +276,23 @@ CONSONANTS = [
 VOWELS = [
 
     # -- Monophthongs -- #
-    Vowel(id_=101, char='i',  position=( (0, 7), ),  manner='lax',   lips='unrounded', description='short "i", as in "sit"'),     # /ɪ/
-    Vowel(id_=102, char='e',  position=( (0, 9), ),  manner='tense', lips='unrounded', description='long "e", as in "see"'),      # /i(ː)/
-    Vowel(id_=103, char='u',  position=( (5, 2), ),  manner='lax',   lips='unrounded', description='short "u", as in "up"'),      # /ʌ/
-    Vowel(id_=104, char='e',  position=( (0, 5), ),  manner='lax',   lips='unrounded', description='short "e", as in "beg"'),     # /ɛ/
-    Vowel(id_=105, char='a',  position=( (0, 2), ),  manner='lax',   lips='unrounded', description='short "a", as in "bad"'),     # /æ/
-    Vowel(id_=107, char='aa', position=( (9, 1), ),  manner='tense', lips='unrounded', description='flat "a", as in "ah"'),       # /ɑ/
-    Vowel(id_=110, char='oo', position=( (9, 7), ),  manner='lax',   lips='rounded',   description='short "u", as in "put"'),     # /ʊ/
-    Vowel(id_=111, char='ue', position=( (9, 9), ),  manner='tense', lips='rounded',   description='long "u", as in "blue"'),     # /uː/
-    Vowel(id_=112, char='au', position=( (9, 3), ),  manner='tense', lips='rounded',   description='"aw", as in "saw"'),          # /ɔ/
+    Vowel(id_=101, char='i',  position=( (0, 7), ),  manner='lax',   lips='unrounded', description='"i" as in "sit"'),     # /ɪ/ short
+    Vowel(id_=102, char='e',  position=( (0, 9), ),  manner='tense', lips='unrounded', description='"e" as in "see"'),      # /i(ː)/ long
+    Vowel(id_=103, char='u',  position=( (5, 2), ),  manner='lax',   lips='unrounded', description='"u" as in "up"'),      # /ʌ/ short
+    Vowel(id_=104, char='e',  position=( (0, 5), ),  manner='lax',   lips='unrounded', description='"e" as in "beg"'),     # /ɛ/ short
+    Vowel(id_=105, char='a',  position=( (0, 2), ),  manner='lax',   lips='unrounded', description='"a" as in "bad"'),     # /æ/ short
+    Vowel(id_=107, char='aa', position=( (9, 1), ),  manner='tense', lips='unrounded', description='"a" as in "ah"'),       # /ɑ/ flat
+    Vowel(id_=110, char='oo', position=( (9, 7), ),  manner='lax',   lips='rounded',   description='"u" as in "put"'),     # /ʊ/ short
+    Vowel(id_=111, char='ue', position=( (9, 9), ),  manner='tense', lips='rounded',   description='"u" as in "blue"'),     # /uː/ long
+    Vowel(id_=112, char='au', position=( (9, 3), ),  manner='tense', lips='rounded',   description='"aw" as in "saw"'),          # /ɔ/
 
     # -- Diphthongs -- #
-    Vowel(id_=106, char='ae', position=( (0, 5), (3, 7) ),  manner='tense', lips='unrounded', description='long "a", as in "gate"'),  # eɪ
-    Vowel(id_=108, char='ie', position=( (3, 0), (4, 7) ),  manner='tense', lips='unrounded', description='long "i", as in "hide"'),  # äɪ
-    Vowel(id_=109, char='o',  position=( (8, 5), (9, 7) ),  manner='tense', lips='rounded',   description='long "o", as in "toe"'),   # oʊ
-    Vowel(id_=113, char='ou', position=( (5, 0), (5, 6) ),  manner='tense', lips='unrounded', description='"ou", as in "out"'),       # aʊ
-    Vowel(id_=114, char='oi', position=( (9, 4), (5, 7) ),  manner='tense', lips='unrounded', description='"oi", as in "toil"'),      # ɔɪ
-    Vowel(id_=115, char='eo', position=( (0, 7), (9, 7) ),  manner='tense', lips='unrounded', description='"eo", as in "beorn"')      # eo
+    Vowel(id_=106, char='ae', position=( (0, 5), (3, 7) ),  manner='tense', lips='unrounded', description='"a" as in "gate"'),  # eɪ long
+    Vowel(id_=108, char='ie', position=( (3, 0), (4, 7) ),  manner='tense', lips='unrounded', description='"i" as in "hide"'),  # äɪ long
+    Vowel(id_=109, char='o',  position=( (8, 5), (9, 7) ),  manner='tense', lips='rounded',   description='"o" as in "toe"'),   # oʊ long
+    Vowel(id_=113, char='ou', position=( (5, 0), (5, 6) ),  manner='tense', lips='unrounded', description='"ou" as in "out"'),       # aʊ
+    Vowel(id_=114, char='oi', position=( (9, 4), (5, 7) ),  manner='tense', lips='unrounded', description='"oi" as in "toil"'),      # ɔɪ
+    Vowel(id_=115, char='eo', position=( (0, 7), (9, 7) ),  manner='tense', lips='unrounded', description='"eo" as in "beorn"')      # eo
     # Source: https://en.wikipedia.org/wiki/Diphthong#English
     # leer   ɪɚ 
     # lair   ɛɚ
