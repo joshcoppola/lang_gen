@@ -24,12 +24,12 @@ def clamp(minimum, num, maximum):
     ''' Clamps the input num to ensure it sits between min and max '''
     return max(minimum, min(num, maximum))
 
-def join_list(list_):
-    if len(list_) == 1:
-        return list_[0]
-
-    elif len(list_) == 2:
-        return ' and '.join(list_)
-
+def join_list(string_list, conjunction='and', oxford_comma='', null_value="nothing"):
+    if len(string_list) == 0:
+        return null_value
+    if len(string_list) == 1:
+        return string_list[0]
+    elif len(string_list) == 2:
+        return '{0} {1} '.format(oxford_comma, conjunction).join(string_list)
     else:
-        return '{0}, and {1}'.format(', '.join(list[:-1]), list_[-1])
+        return '{0}, {1} {2}'.format(', '.join([s for s in string_list[:-1]]), conjunction, string_list[-1])
