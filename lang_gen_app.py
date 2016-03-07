@@ -1,3 +1,4 @@
+from __future__ import division, unicode_literals
 import os
 import urllib
 
@@ -8,31 +9,38 @@ import jinja2
 import webapp2
 
 
+import lang_gen
+
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
     extensions=['jinja2.ext.autoescape'],
     autoescape=True)
-import lang_gen
 
 
 def new_language():
-    t = lang_gen.Language()
-    t.generate_language_properties()
+    language = lang_gen.Language()
+    language.generate_language_properties()
 
-    name = t.create_word(meaning='Name of language', number_of_syllables=2)
-    words = t.get_sample_word_sets()
-    
-    return name, words, t.log
+    name = language.create_word(meaning='Name of language', number_of_syllables=2)
+    words = language.get_sample_word_sets()
+
+    onset_description, coda_description = language.describe_syllable_level_rules()
+
+    return language, name, words, onset_description, coda_description
+
 
 class MainPage(webapp2.RequestHandler):
+
     def get(self):
-        # self.response.write(MAIN_PAGE_HTML)
-        name, words, log = new_language()
+        language, name, words, onset_description, coda_description = new_language()
         
         template_values = {
-          'name': name, 
-          'words': words,
-          'text_log': log
+            'name': name,
+            'words': words,
+            'descriptions': [onset_description, coda_description],
+            'phoneme_info': '{0} has {1} consonants and {2} vowels'.format(name, len(language.valid_consonants), len(language.probabilities['nucleus'])),
+            'consonants': sorted([language.orthography.mapping[consonant.id_].get_description() for consonant in language.valid_consonants], key=lambda desc_tuple: desc_tuple[0]),
+            'vowels': sorted([language.orthography.mapping[vowel.id_].get_description() for vowel in language.valid_vowels], key=lambda desc_tuple: desc_tuple[0]),
         }
 
         template = JINJA_ENVIRONMENT.get_template('index.html')
