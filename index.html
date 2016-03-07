@@ -10,7 +10,7 @@
 	<body>  
 		<div class="page-container">
 			<div class="title">
-				<h1> The language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
+				<h1> The {{ adjective }} language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
 			</div>
 			<div class="language-description secondary">
 				<!-- # of consonants / vowels -->
@@ -22,59 +22,98 @@
 			</div>
 
 			<div class="'language-properties inline left-side">
-				<!-- -------------- Consonants -------------- -->
+				<!-- -------------- Vowels -------------- -->
 				<div class="phoneme-list text-panel">
-					<h2> Consonants in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
+					<h2> Glyphs and phonemes in {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h2>
 
-					<table>
+                    <table>
 						<tr>
-							<th> Glyph </th>
-							<th> Pronunciation </th>
-							<th> Notes </th>
+							<th colspan="2"> Consonants </th>
 						</tr>
 						{% for normal, english_equivalent, pronunciation_exceptions in consonants %}
 							<tr>
 								<td>{{ normal }}</td>
-								<td>{{ english_equivalent }}</td>
-								<td class="secondary">{{ pronunciation_exceptions }}</td>
+								<td class="secondary">{{ english_equivalent }}</td>
 							</tr>
 						{% endfor %}
 					</table>
-				</div>
-
-				<!-- -------------- Vowels -------------- -->
-				<div class="phoneme-list text-panel">
-					<h2> Vowels in {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h2>
 
 					<table>
 						<tr>
-							<th> Glyph </th>
-							<th> Pronunciation </th>
-							<th> Notes </th>
+							<th colspan="2"> Vowels </th>
 						</tr>
 						{% for normal, english_equivalent, pronunciation_exceptions in vowels %}
 							<tr>
 								<td>{{ normal }}</td>
-								<td>{{ english_equivalent }}</td>
-								<td class="secondary">{{ pronunciation_exceptions }}</td>
+								<td class="secondary">{{ english_equivalent }}</td>
 							</tr>
 						{% endfor %}
 					</table>
+
 				</div>
 
+				<!-- -------------- Consonants -------------- -->
+				<!--<div class="phoneme-list text-panel">-->
+					<!--<h2> Consonants in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>-->
+				<!--</div>-->
+
 			</div>
-			
-			<div class="sample-words inline text-panel right-side">
-				<h2>
-					Place names in {{ name }}
-				</h2>
-				{% for word in words %}
-					<div> 
-						<span>{{ word.language.orthography.phon_to_orth(word).capitalize() }}</span>
-						<span class='meaning secondary'>"{{word.meaning}}"</span>
-						<span class='etymology secondary'>{{word.desc_etymology()}}</span>
-					</div>
-				{% endfor %}
+
+            <div class="sample-words inline right-side">
+                <!-- ------------- Compound words / place names -------------- -->
+                <div class="text-panel">
+                    <h2> Famous place names in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
+                    <table>
+                        <tr>
+                            <th> Name </th>
+                            <th> Meaning </th>
+                        </tr>
+
+                        {% for word in compound_words %}
+                        <tr>
+                            <td>{{ word.language.orthography.phon_to_orth(word).capitalize() }}</td>
+                            <td class="secondary">"{{ word.meaning.title() }}"</td>
+                            <td class='secondary small-text'>{{word.desc_etymology()}}</td>
+                        </tr>
+                    {% endfor %}
+				    </table>
+                </div>
+
+                <!-- --------------- Regular vocabulary ---------------- -->
+				<div class="text-panel">
+                    <h2> Sample vocabulary in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
+
+                    <!-- First table -->
+                    <table>
+                        <tr>
+                            <th> Word </th>
+                            <th> Meaning </th>
+                        </tr>
+
+                        {% for word in vocab1 %}
+                            <tr>
+                                <td>{{ word }}</td>
+                                <td class="secondary">{{ word.meaning }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+
+                    <!-- Second table -->
+                    <table class="table-spacer">
+                        <tr>
+                            <th> Word </th>
+                            <th> Meaning </th>
+                        </tr>
+
+                        {% for word in vocab2 %}
+                            <tr>
+                                <td>{{ word }}</td>
+                                <td class="secondary">{{ word.meaning }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
 			</div>
 		</div>
 		
