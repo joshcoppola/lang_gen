@@ -13,8 +13,6 @@
 				<h1> The {{ adjective }} language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
 			</div>
 			<div class="language-description secondary">
-				<!-- # of consonants / vowels -->
-				<span class='language-rule'>{{ phoneme_info.capitalize() }} </span>
 				<!-- Onset / coda descriptions -->
 				{% for line in descriptions %}
 					<span class='language-rule'> &nbsp; &#8258; &nbsp; {{ line.capitalize() }}</span>
@@ -28,7 +26,7 @@
 
                     <table>
 						<tr>
-							<th colspan="2"> Consonants </th>
+							<th colspan="2"> Consonants ({{ number_of_consonants }})</th>
 						</tr>
 						{% for normal, english_equivalent, pronunciation_exceptions in consonants %}
 							<tr>
@@ -40,7 +38,7 @@
 
 					<table>
 						<tr>
-							<th colspan="2"> Vowels </th>
+							<th colspan="2"> Vowels ({{ number_of_vowels }})</th>
 						</tr>
 						{% for normal, english_equivalent, pronunciation_exceptions in vowels %}
 							<tr>
@@ -116,7 +114,10 @@
 
 			</div>
 		</div>
-		
+
+		<div class="small-text hint">
+            Random seed: {{seed}}
+        </div>
 	</body>
 </html>
 {% endautoescape %}
