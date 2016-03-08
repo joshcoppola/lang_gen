@@ -15,6 +15,12 @@ from helpers import weighted_random, chance, clamp, join_list
 This file generates languages which have distinct phonemes.
 '''
 
+
+seed = roll(0, 32000)
+print ' -- Running with random seed', seed
+random.seed(seed)
+
+
 # Chance of dropping an entire articulation method from the language
 DROP_ENTIRE_METHOD_CHANCE = 5
 # Chance of dropping an entire articulation location from the language
@@ -100,7 +106,7 @@ COMPOUND_WORD_DROP_ONSET_CHANCE = 25
 
 # The maximum amount of phonemes a word can be to have the generator consider including
 # the entire word (not just the root) into the compound word
-MAX_COMPOUND_WORD_PHONEMES_PER_SECTION = 4
+MAX_COMPOUND_WORD_PHONEMES_PER_SECTION = 5
 
 # How many syllables a compound word can become, before the generator forces a sub-word
 # to become truncated (using only the word's root)
@@ -108,7 +114,7 @@ MAX_COMPOUND_WORD_SYLLABLES_BEFORE_FORCE_USING_WORD_ROOT = 2
 
 # When generating a compound word, the chance that it will try to use the entire sub-word
 # as part of the compound word, if it meets all other criteria
-USE_FULL_WORD_FOR_COMPOUND_WORD_CHANCE = 60
+USE_FULL_WORD_FOR_COMPOUND_WORD_CHANCE = 50
 
 # A data structure containing phoneme #s for different parts of the syllable
 # Syllable = namedtuple('Syllable', ['onset', 'nucleus', 'coda'])
@@ -765,7 +771,6 @@ class Language:
 
         # Create the word
         compound_word = Word(meaning=meaning, language=self, syllables=syllables, etymology=etymology)
-
         # Add to dictionary
         self.vocabulary[english_morphemes] = compound_word
 
@@ -783,31 +788,22 @@ class Language:
             all_current_syllables.extend(current_syllables)
 
         # -- One the rare case there is an empty coda followed by an empty onset, add a consonant between them --- #
-        elif len(all_current_syllables) and all_current_syllables[-1].coda == p.data.empty_coda \
-                                        and current_syllables[0].onset == p.data.empty_onset:
-
+        elif len(all_current_syllables) and all_current_syllables[-1].coda.is_empty() and current_syllables[0].onset.is_empty():
             # Choose an onset from the list of this language's valid onsets. (Syllable position shouldn't matter for picking
             # an onset, but here we're choosing a value of 1 (middle of word) anyway. Loop to ensure an empty onset is not chosen!
             dividing_onset = p.data.empty_onset
-            while dividing_onset != p.data.empty_onset:
+            while dividing_onset.is_empty():
                 dividing_onset = self.choose_valid_onset(previous_coda=all_current_syllables[-1].coda, syllable_position=1)
 
             current_syllables = self.pop_and_replace_with_onset(current_syllables=current_syllables, new_onset=dividing_onset)
             all_current_syllables.extend(current_syllables)
 
         # --- If the previous coda is not complex, and the current onset is not complex, join without truncating anything --- #
-        elif len(all_current_syllables) \
-            and chance(50) \
-            and (not all_current_syllables[-1].coda.is_complex()) \
-            and (not current_syllables[0].onset.is_complex()):
-
+        elif len(all_current_syllables) and chance(50) and (not all_current_syllables[-1].coda.is_complex()) and (not current_syllables[0].onset.is_complex()):
             all_current_syllables.extend(current_syllables)
 
         # --- If the previous coda is not empty, and the current onset is not empty, join after truncating current syllable's onset --- #
-        elif len(all_current_syllables) \
-                and (not all_current_syllables[-1].coda.is_empty()) \
-                and (not current_syllables[0].onset.is_empty()):
-
+        elif len(all_current_syllables) and (not all_current_syllables[-1].coda.is_empty()) and (not current_syllables[0].onset.is_empty()):
             current_syllables = self.pop_and_replace_with_onset(current_syllables=current_syllables, new_onset=p.data.empty_onset)
             all_current_syllables.extend(current_syllables)
 
@@ -849,29 +845,28 @@ class Language:
 
 
     def get_sample_word_sets(self):
-        sample_compound_words = (
-            self.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),
-            self.create_compound_word(meaning='blue mountain', english_morphemes='blue mountain'),
-            self.create_compound_word(meaning='black woods', english_morphemes='black woods'),
-            self.create_compound_word(meaning='blue woods', english_morphemes='blue woods'),
-            self.create_compound_word(meaning='long river', english_morphemes='long river'),
-            self.create_compound_word(meaning='blue river', english_morphemes='blue river'),
-            self.create_compound_word(meaning='black river', english_morphemes='black river'),
-            self.create_compound_word(meaning='calm harbor', english_morphemes='calm harbor'),
-            self.create_compound_word(meaning='great river', english_morphemes='great river'),
-            self.create_compound_word(meaning='red island', english_morphemes='red island'),
-            self.create_compound_word(meaning='red river', english_morphemes='red river')
-        )
+        ''' Generate some sample place names to have as compound words '''
+        adjectives = ('red', 'black', 'blue', 'great', 'serene', 'old', 'small')
+        nouns = ('mountain', 'river', 'woods', 'island', 'harbor', 'plains')
 
-        # formatted_words = ['{0} "{1}" {2}'.format(word, word.meaning, word.desc_etymology()) for word in sample_compound_words]
+        compound_word_choices = []
 
-        return sample_compound_words
+        while len(compound_word_choices) <= 12:
+            adj = random.choice(adjectives)
+            noun = random.choice(nouns)
+
+            compound_word = '{0} {1}'.format(adj, noun)
+
+            if compound_word not in compound_word_choices:
+                compound_word_choices.append(compound_word)
+
+        return [self.create_compound_word(meaning=cw, english_morphemes=cw) for cw in compound_word_choices]
 
     def get_sample_vocabulary_words(self):
 
         sample_words = ['city', 'house', 'teacher', 'student', 'lawyer', 'doctor', 'patient', 'waiter', 'secretary',
                         'priest', 'police', 'army', 'soldier', 'artist', 'author', 'manager', 'reporter', 'actor',
-                        'hat', 'dress', 'shirt', 'pants', 'shoes', 'coat', 'son', 'daughter', 'mother', 'father' 'baby',
+                        'hat', 'dress', 'shirt', 'pants', 'shoes', 'coat', 'son', 'daughter', 'mother', 'father', 'baby',
                         'man', 'woman', 'brother', 'sister', 'king', 'queen', 'president', 'boy', 'girl', 'child', 'human',
                         'friend', 'cheese', 'bread', 'soup', 'cake', 'chicken', 'apple', 'banana', 'orange', 'lemon', 'corn',
                         'rice', 'oil', 'seed', 'table', 'chair', 'bed', 'dream', 'window', 'door', 'book', 'key', 'letter',
@@ -882,10 +877,6 @@ class Language:
 
 if __name__ == '__main__':
     print ''
-
-    seed = roll(0, 32000)
-    print ' -- Running with random seed', seed
-    random.seed(seed)
 
     t = Language()
     t.generate_language_properties()
@@ -902,14 +893,7 @@ if __name__ == '__main__':
     print ''
 
 
-    sample_compund_words = (
-        t.create_compound_word(meaning='black mountain', english_morphemes='black mountain'),
-        t.create_compound_word(meaning='blue mountain', english_morphemes='blue mountain'),
-        t.create_compound_word(meaning='black woods', english_morphemes='black woods'),
-        t.create_compound_word(meaning='blue woods', english_morphemes='blue woods')
-        )
-
-    for word in sample_compund_words:
+    for word in t.get_sample_word_sets():
         print '{0} "{1}" {2}'.format(word, word.meaning, word.desc_etymology())
 
     print ''
