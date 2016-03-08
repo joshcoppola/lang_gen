@@ -49,13 +49,15 @@ class MainPage(webapp2.RequestHandler):
         language, name, vocab1, vocab2, compound_words, onset_description, coda_description, language_adjective = new_language()
         
         template_values = {
+            'seed': lang_gen.seed,
             'name': name,
             'adjective': language_adjective,
             'vocab1': vocab1,
             'vocab2': vocab2,
             'compound_words': compound_words,
             'descriptions': [onset_description, coda_description],
-            'phoneme_info': '{0} has {1} consonants and {2} vowels'.format(name, len(language.valid_consonants), len(language.probabilities['nucleus'])),
+            'number_of_consonants': len(language.valid_consonants),
+            'number_of_vowels':len(language.probabilities['nucleus']),
             'consonants': sorted([language.orthography.mapping[consonant.id_].get_description() for consonant in language.valid_consonants], key=lambda desc_tuple: desc_tuple[0]),
             'vowels': sorted([language.orthography.mapping[vowel.id_].get_description() for vowel in language.valid_vowels], key=lambda desc_tuple: desc_tuple[0]),
         }
@@ -63,13 +65,7 @@ class MainPage(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('index.html')
         self.response.write(template.render(template_values))
 
-class Guestbook(webapp2.RequestHandler):
-    def post(self):
-        self.response.write('<html><body>You wrote:<pre>')
-        self.response.write(cgi.escape(self.request.get('content')))
-        self.response.write('</pre></body></html>')
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/sign', Guestbook),
 ], debug=True)
