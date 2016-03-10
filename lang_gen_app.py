@@ -24,6 +24,10 @@ LANGUAGE_ADJECTIVES = (
     'wondrous'
 )
 
+DESC_1_ADJECTIVES = ['captivating', 'stunning', 'breathtaking', 'fascinating']
+
+DESC_1_NOUNS = ['specimen', 'tongue', 'discovery']
+
 def new_language():
     language = lang_gen.Language()
     language.generate_language_properties()
@@ -39,19 +43,21 @@ def new_language():
     onset_description, coda_description = language.describe_syllable_level_rules()
 
     language_adjective = random.choice(LANGUAGE_ADJECTIVES)
+    language_description = '{0} {1}'.format(random.choice(DESC_1_ADJECTIVES), random.choice(DESC_1_NOUNS))
 
-    return language, name, vocab1, vocab2, compound_words, onset_description, coda_description, language_adjective
+    return language, name, vocab1, vocab2, compound_words, onset_description, coda_description, language_adjective, language_description
 
 
 class MainPage(webapp2.RequestHandler):
 
     def get(self):
-        language, name, vocab1, vocab2, compound_words, onset_description, coda_description, language_adjective = new_language()
+        language, name, vocab1, vocab2, compound_words, onset_description, coda_description, language_adjective, language_description = new_language()
         
         template_values = {
             'seed': lang_gen.seed,
             'name': name,
             'adjective': language_adjective,
+            'language_description': language_description,
             'vocab1': vocab1,
             'vocab2': vocab2,
             'compound_words': compound_words,
