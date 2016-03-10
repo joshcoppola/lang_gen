@@ -3,64 +3,60 @@
 
 
 <html>
-   
-   <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-   <link href='https://fonts.googleapis.com/css?family=Lato:400,300' rel='stylesheet' type='text/css'>
+   <head>
+        <title>Language Generator</title>
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+        <link href='https://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 
-	<body>  
+       <script>
+            // Please forgive me
+            window.onscroll = function() {test_animate()};
+
+            function test_animate() {
+                if (document.body.scrollTop > 45 || document.documentElement.scrollTop > 45) {
+                    document.getElementById("lang-title").className = "send-left";
+                    document.getElementById("create-form").className = "send-right";
+                } else {
+                    document.getElementById("lang-title").className = "";
+                    document.getElementById("create-form").className = "";
+                }
+            }
+       </script>
+   </head>
+
+	<body>
+        <nav>
+            <div> Language Generator </div>
+        </nav>
+        <div id="subnav">
+            <div class="center-text small-text hint">
+                You have created
+            </div>
+            <div id="lang-title">
+                The {{ adjective }} language of <span class="lang-name">{{ name.language.orthography.phon_to_orth(name).capitalize() }}</span>
+                <form id="create-form" action="/" method="get">
+                    <button type="submit">Create another!</button>
+                </form>
+            </div>
+        </div>
+
 		<div class="page-container">
-			<div class="title">
-				<h1> The {{ adjective }} language of {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h1>
-			</div>
-			<div class="language-description secondary">
-				<!-- Onset / coda descriptions -->
-				{% for line in descriptions %}
-					<span class='language-rule'> &nbsp; &#8258; &nbsp; {{ line.capitalize() }}</span>
-				{% endfor %}
-			</div>
+			<!--<div class="language-description hint">-->
+				<!--&lt;!&ndash; Onset / coda descriptions &ndash;&gt;-->
+				<!--{% for line in descriptions %}-->
+					<!--<span class='language-rule'> &nbsp; &#8258; &nbsp; {{ line.capitalize() }}</span>-->
+				<!--{% endfor %}-->
+			<!--</div>-->
+            <div class="language-description hint"> Here is some information about this {{ language_description }} </div>
 
-			<div class="'language-properties inline left-side">
-				<!-- -------------- Vowels -------------- -->
-				<div class="phoneme-list text-panel">
-					<h2> Glyphs and phonemes in {{ name.language.orthography.phon_to_orth(name).capitalize() }} </h2>
-
-                    <table>
-						<tr>
-							<th colspan="2"> Consonants ({{ number_of_consonants }})</th>
-						</tr>
-						{% for normal, english_equivalent, pronunciation_exceptions in consonants %}
-							<tr>
-								<td>{{ normal }}</td>
-								<td class="secondary">{{ english_equivalent }}</td>
-							</tr>
-						{% endfor %}
-					</table>
-
-					<table>
-						<tr>
-							<th colspan="2"> Vowels ({{ number_of_vowels }})</th>
-						</tr>
-						{% for normal, english_equivalent, pronunciation_exceptions in vowels %}
-							<tr>
-								<td>{{ normal }}</td>
-								<td class="secondary">{{ english_equivalent }}</td>
-							</tr>
-						{% endfor %}
-					</table>
-
-				</div>
-
-				<!-- -------------- Consonants -------------- -->
-				<!--<div class="phoneme-list text-panel">-->
-					<!--<h2> Consonants in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>-->
-				<!--</div>-->
-
-			</div>
-
-            <div class="sample-words inline right-side">
+            <!-- -------------- Left panel ---------------- -->
+            <div class="sample-words inline">
                 <!-- ------------- Compound words / place names -------------- -->
                 <div class="text-panel">
-                    <h2> Famous place names in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
+                    <h2> Famous places in <span class="lang-name">{{ name.language.orthography.phon_to_orth(name).capitalize() }}</span></h2>
+                    <div class="small-text hint"> These are some imaginary places, and what people speaking {{ name.language.orthography.phon_to_orth(name).capitalize() }} might name them. </div>
                     <table>
                         <tr>
                             <th> Name </th>
@@ -79,8 +75,8 @@
 
                 <!-- --------------- Regular vocabulary ---------------- -->
 				<div class="text-panel">
-                    <h2> Sample vocabulary in {{ name.language.orthography.phon_to_orth(name).capitalize() }}</h2>
-
+                    <h2> Sample vocabulary in <span class="lang-name">{{ name.language.orthography.phon_to_orth(name).capitalize() }}</span></h2>
+                    <div class="small-text hint"> These are some sample {{ name.language.orthography.phon_to_orth(name).capitalize() }} vocabulary words, with their English translation. </div>
                     <!-- First table -->
                     <table>
                         <tr>
@@ -113,11 +109,46 @@
                 </div>
 
 			</div>
+
+            <!-- -------------- Right panel ---------------- -->
+            <div class="'language-properties inline">
+				<!-- -------------- Vowels -------------- -->
+				<div class="phoneme-list text-panel">
+					<h2> Glyphs and phonemes in <span class="lang-name">{{ name.language.orthography.phon_to_orth(name).capitalize() }}</span> </h2>
+                    <div class="small-text hint"> These are how sounds in {{ name.language.orthography.phon_to_orth(name).capitalize() }} are written and pronounced. </div>
+
+                    <table>
+						<tr>
+							<th colspan="2"> Consonants </th>
+						</tr>
+						{% for normal, english_equivalent, pronunciation_exceptions in consonants %}
+							<tr>
+								<td>{{ normal }}</td>
+								<td class="secondary">{{ english_equivalent }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+
+					<table>
+						<tr>
+							<th colspan="2"> Vowels </th>
+						</tr>
+						{% for normal, english_equivalent, pronunciation_exceptions in vowels %}
+							<tr>
+								<td>{{ normal }}</td>
+								<td class="secondary">{{ english_equivalent }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+
+				</div>
+			</div>
 		</div>
 
-		<div class="small-text hint">
+        <div class="small-text hint">
             Random seed: {{seed}}
         </div>
+
 	</body>
 </html>
 {% endautoescape %}
