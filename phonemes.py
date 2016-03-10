@@ -208,7 +208,7 @@ CONSONANTS = [
     Consonant(213, 's',  'alveolar',     'fricative',   0, '"s"'),
     Consonant(214, 'z',  'alveolar',     'fricative',   1, '"z"'),
     Consonant(215, 'sh', 'post-alveolar','fricative',   0, '"sh"'),
-    Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"zh" as the "z" in "azure"'),
+    Consonant(216, 'zh', 'post-alveolar','fricative',   1, '"z" as in "azure"'),
     Consonant(217, 'h',  'glottal',      'fricative',   3, '"h"'),
     Consonant(218, 'm',  'bilabial',     'nasal',       3, '"m"'),
     Consonant(219, 'n',  'alveolar',     'nasal',       3, '"n"'),
