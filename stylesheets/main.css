@@ -1,30 +1,48 @@
 
 
-html {
-    min-width: 375;
-}
-
 body {
-  font-family: 'Lato', sans-serif;
+  padding-top: 70px;
+  font-family: 'Roboto', sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
-  /*background-color: #F2F2F2;*/
-  background-color: #e8eaf6;
+  background-color: #FAFAFA;
   color: #000;
   opacity: .87;
   margin: 0em;
 }
 
+nav{
+    width: 100%;
+    height: 70px;
+    background-color: #00897b;
+    color: white;
+    font-weight: 400;
+    font-size: 24px;
+    vertical-align: middle;
+    padding-left: 1em;
+    display: inline-block;
+    box-shadow: -5px 1px 3px #AAA;
+    position: fixed;
+    top: 0px;
+    z-index: 2;
+}
+nav div{
+    padding-top: 15px;
+}
+
+
 h1 {
   text-align: center;
   font-weight: 300;
+  margin-top: 0em;
 }
 
 h2 {
     text-align: left;
     font-weight: 300;
     margin-top: 0em;
+    margin-bottom: .1em;
 }
 
 table {
@@ -33,6 +51,7 @@ table {
     line-height: 1.15;
     display: inline-block;
     vertical-align: top;
+    margin-top: 1em;
 }
 
 th {
@@ -50,16 +69,88 @@ td {
     padding-bottom: .3em;
 }
 
+button {
+    border: 0px;
+    background-color: #bdbdbd;
+    color: #FFF;
+    padding: 5px;
+    cursor: pointer;
+    transition: background-color .35s ease;
+}
+button:hover {
+    background-color: #009688;
+    transition: background-color .2s ease;
+}
+button:active {
+    background-color: #008274;
+    transition: background-color .2s ease;
+}
+
+footer{
+    background-color: #bdbdbd;
+    width: 100%;
+    height: 50px;
+}
+
+
+/* ---- For animating the lang info left ----*/
+.send-left {
+    z-index: 1;
+    text-align: left !important;
+    position: fixed;
+    top: 70px;
+    width: 100%;
+    height: 2em;
+    font-size: 18px !important;
+    background-color: #F0F0F0;
+    box-shadow: -5px 1px 3px #999;
+    padding-top: .5em;
+    padding-left: 1%;
+
+    transition: font-size 0.35s ease;
+}
+
+/* ---- For popping the new language button left ----*/
+.send-right {
+    position: fixed;
+    top: 78px;
+    right: 20px;
+}
+
+/* The sub-nav menu, which will slide down with the main menu */
+#subnav{
+    padding-top: 20px;
+    padding-bottom: 15px;
+    z-index: 1;
+    width: 100%;
+    background-color: #F0F0F0;
+    border-bottom: 1px solid #D0D0D0
+}
+
+/* The div containing the name of the language */
+#lang-title {
+    vertical-align: top;
+    text-align: center;
+    font-weight: 300;
+    font-size: 30px;
+    background-color: #F0F0F0;
+    transition: font-size 0.35s ease;
+}
+
+
+/* -------- Basic page stuff -------- */
+
 .page-container {
   text-align: center;
+  padding-top: 15px;
+  padding-bottom: 150px;
 }
 
 .text-panel {
     margin: 1em .5em;
-    padding: 1.5em;
+    padding: 1.5em 2.5em;
     background-color: #FFF;
     text-align: left;
-    /* box-shadow: 2px 2px 2px #BBB; */
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 }
 
@@ -68,21 +159,25 @@ td {
     text-align: center;
 }
 
+.table-spacer {
+    margin-left: 5em;
+}
+
+.lang-name {
+    color: #5e35b1;
+    font-weight: 300;
+}
+
+
+/* ------ Building blocks for OOCSS -------*/
+
 .inline {
     display: inline-block;
     vertical-align: top;
 }
 
-.table-spacer {
-    margin-left: 5em;
-}
-
-.left-side {
-    /*width: 550px;*/
-}
-
-.right-side {
-    /*width: 550px;*/
+.center-text{
+    text-align: center;
 }
 
 .small-text{
@@ -97,8 +192,12 @@ td {
   opacity: .38
 }
 
+
+/* ------- Changes for responsiveness -------- */
+
+
 /* Small screen / tablet-ish size */
-@media screen and (max-width: 1200px) {
+@media screen and (max-width: 1020px) {
     h2 {
         text-align: center;
     }
@@ -129,6 +228,9 @@ td {
     .table-spacer {
         margin-left: 2em;
     }
+    button {
+        background-color: #009688;
+    }
 }
 
 /* Tiny screen */
@@ -137,13 +239,19 @@ td {
         margin: 1em auto;
     }
     .page-container {
-        padding: 0em;
+        padding: 1%;
     }
     .table-spacer {
         margin-left: 0em;
     }
     .text-panel {
-        padding: .1em;
+        padding: 1.5em .1em;
         width: 98%;
+    }
+    .test-animate{
+        font-size: 16px !important;
+    }
+    .send-right {
+        display: none;
     }
 }
